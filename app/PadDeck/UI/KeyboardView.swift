@@ -3,7 +3,7 @@ import AudioToolbox
 
 /// One key of the layout.
 struct KeySpec {
-    enum Kind { case char, key, mod, sys, layer, media }
+    enum Kind { case char, key, mod, sys, layer, media, spacer }
 
     var kind: Kind
     var label: String
@@ -43,12 +43,11 @@ struct KeySpec {
         s.width = w
         return s
     }
+    static func spacer(_ w: CGFloat) -> KeySpec { KeySpec(kind: .spacer, label: "", width: w) }
     func widened(_ w: CGFloat) -> KeySpec { var k = self; k.width = w; return k }
 }
 
 private enum Layout {
-    static let unitsPerRow: CGFloat = 11
-
     static func row(_ chars: String, _ shifted: String? = nil) -> [KeySpec] {
         let a = Array(chars).map(String.init)
         let b = shifted.map { Array($0).map(String.init) }
@@ -63,7 +62,8 @@ private enum Layout {
          KeySpec.mod("⌘", .cmd, 1.25), KeySpec.layer("fn", "fn"), KeySpec(kind: .sys, label: "áç")]
     }
 
-    static let layers: [String: [[KeySpec]]] = {
+    /// Mac-like layout, 11 units per row: iPad and iPhone in landscape.
+    static let wide: [String: [[KeySpec]]] = {
         let del = KeySpec.key("⌫", Keys.delete)
         let ret = KeySpec.key("return", Keys.returnKey, 2)
         let abc: [[KeySpec]] = [
@@ -100,6 +100,51 @@ private enum Layout {
         ]
         let fn: [[KeySpec]] = [fn1, fn2, fn3, fn4]
         return ["abc": abc, "123": num, "sym": sym, "fn": fn]
+    }()
+
+    /// iOS-like layout, 10 units per row, for narrow screens (iPhone in portrait):
+    /// wider keys; ⌫ beside m, return on the bottom row, fn and áç on the 123 tab.
+    static let narrow: [String: [[KeySpec]]] = {
+        let del = KeySpec.key("⌫", Keys.delete, 1.5)
+        let ret = KeySpec.key("return", Keys.returnKey, 2)
+        let sys = KeySpec(kind: .sys, label: "áç", width: 1.25)
+        let abc: [[KeySpec]] = [
+            row("qwertyuiop", "QWERTYUIOP"),
+            [KeySpec.spacer(0.5)] + row("asdfghjkl", "ASDFGHJKL") + [KeySpec.spacer(0.5)],
+            [KeySpec.mod("⇧", .shift, 1.5)] + row("zxcvbnm", "ZXCVBNM") + [del],
+            [KeySpec.layer("123", "123", 1.25), KeySpec.mod("⌃", .ctrl), KeySpec.mod("⌥", .opt),
+             KeySpec.space(3.5), KeySpec.mod("⌘", .cmd, 1.25), ret],
+        ]
+        func wideSymbols(_ s: [String]) -> [KeySpec] { symbols(s).map { $0.widened(1.4) } }
+        let bottom: [KeySpec] = [KeySpec.layer("ABC", "abc", 1.25), KeySpec.layer("fn", "fn", 1.25), sys,
+                                 KeySpec.space(4), ret.widened(2.25)]
+        let num: [[KeySpec]] = [
+            symbols(["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]),
+            symbols(["-", "/", ":", ";", "(", ")", "$", "&", "@", "\""]),
+            [KeySpec.layer("#+=", "sym", 1.5)] + wideSymbols([".", ",", "?", "!", "'"]) + [del],
+            bottom,
+        ]
+        let sym: [[KeySpec]] = [
+            symbols(["[", "]", "{", "}", "#", "%", "^", "*", "+", "="]),
+            symbols(["_", "\\", "|", "~", "<", ">", "€", "£", "•", "`"]),
+            [KeySpec.layer("123", "123", 1.5)] + wideSymbols([".", ",", "?", "!", "°"]) + [del],
+            bottom,
+        ]
+        let f = Keys.fKeys
+        var fn1: [KeySpec] = [KeySpec.key("esc", Keys.escape)]
+        for i in 0..<6 { fn1.append(KeySpec.key("F\(i + 1)", f[i])) }
+        fn1 += [KeySpec.key("Home", Keys.home), KeySpec.key("PgUp", Keys.pageUp), KeySpec.key("⌫", Keys.delete)]
+        var fn2: [KeySpec] = [KeySpec.key("tab", Keys.tab)]
+        for i in 6..<12 { fn2.append(KeySpec.key("F\(i + 1)", f[i])) }
+        fn2 += [KeySpec.key("End", Keys.end), KeySpec.key("PgDn", Keys.pageDown), KeySpec.key("⌦", Keys.forwardDelete)]
+        let media: [MediaKey] = [.brightdown, .brightup, .prev, .play, .next, .mute, .voldown, .volup]
+        let fn3: [KeySpec] = media.map { KeySpec.media($0, 1.25) }
+        let fn4: [KeySpec] = [
+            KeySpec.layer("ABC", "abc", 1.25), KeySpec.mod("⇧", .shift), KeySpec.mod("⌃", .ctrl),
+            KeySpec.mod("⌥", .opt), KeySpec.mod("⌘", .cmd, 1.25), KeySpec.key("←", Keys.left, 1.125),
+            KeySpec.key("↑", Keys.up, 1.125), KeySpec.key("↓", Keys.down, 1.125), KeySpec.key("→", Keys.right, 1.125),
+        ]
+        return ["abc": abc, "123": num, "sym": sym, "fn": [fn1, fn2, fn3, fn4]]
     }()
 
     /// Characters offered when a key is held (most common in Portuguese first).
@@ -227,6 +272,7 @@ final class KeyboardView: UIView {
 
     private var layers: [String: [[KeyView]]] = [:]
     private var current = "abc"
+    private var narrowMode: Bool?
     private var onceMods: Mods = []
     private var lockedMods: Mods = []
     private var mods: Mods { onceMods.union(lockedMods) }
@@ -254,18 +300,6 @@ final class KeyboardView: UIView {
         super.init(frame: frame)
         isMultipleTouchEnabled = true
         clipsToBounds = false
-        for (name, rows) in Layout.layers {
-            layers[name] = rows.map { specs in
-                specs.map { spec in
-                    let k = KeyView(spec)
-                    k.onDown = { [weak self] in self?.keyDown($0) }
-                    k.onMove = { [weak self] in self?.keyMoved($0, $1) }
-                    k.onUp = { [weak self] in self?.keyUp($0) }
-                    addSubview(k)
-                    return k
-                }
-            }
-        }
         preview.backgroundColor = Theme.keyActive
         preview.textColor = .white
         preview.textAlignment = .center
@@ -274,25 +308,50 @@ final class KeyboardView: UIView {
         preview.isHidden = true
         preview.isUserInteractionEnabled = false
         addSubview(preview)
-        show(layer: "abc")
+        build(narrow: false)
+    }
+
+    /// (Re)creates the key views for the wide or narrow layout, keeping the current tab.
+    private func build(narrow: Bool) {
+        narrowMode = narrow
+        stopRepeat()
+        cancelHold()
+        layers.values.forEach { $0.joined().forEach { $0.removeFromSuperview() } }
+        layers = [:]
+        for (name, rows) in narrow ? Layout.narrow : Layout.wide {
+            layers[name] = rows.map { specs in
+                specs.map { spec in
+                    let k = KeyView(spec)
+                    k.onDown = { [weak self] in self?.keyDown($0) }
+                    k.onMove = { [weak self] in self?.keyMoved($0, $1) }
+                    k.onUp = { [weak self] in self?.keyUp($0) }
+                    insertSubview(k, belowSubview: preview)
+                    return k
+                }
+            }
+        }
+        show(layer: layers[current] != nil ? current : "abc")
     }
 
     required init?(coder: NSCoder) { fatalError() }
 
     private func show(layer name: String) {
         current = name
-        for (n, rows) in layers { rows.joined().forEach { $0.isHidden = n != name } }
+        for (n, rows) in layers { rows.joined().forEach { $0.isHidden = n != name || $0.spec.kind == .spacer } }
         refreshKeys()
     }
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        let narrow = bounds.width < 500
+        if narrow != narrowMode { build(narrow: narrow) }
         let g = gap
         for rows in layers.values {
             let rowH = (bounds.height - g * CGFloat(rows.count - 1)) / CGFloat(rows.count)
             var y: CGFloat = 0
             for row in rows {
-                let unit = (bounds.width - g * CGFloat(row.count - 1)) / Layout.unitsPerRow
+                let units = row.reduce(0) { $0 + $1.spec.width }
+                let unit = (bounds.width - g * CGFloat(row.count - 1)) / units
                 var x: CGFloat = 0
                 for k in row {
                     let w = unit * k.spec.width
@@ -309,7 +368,7 @@ final class KeyboardView: UIView {
         guard !isHidden, bounds.contains(p) else { return nil }
         var best: KeyView?
         var bestDist = CGFloat.greatestFiniteMagnitude
-        for k in (layers[current] ?? []).joined() {
+        for k in (layers[current] ?? []).joined() where k.spec.kind != .spacer {
             let f = k.frame
             if f.contains(p) { return k }
             let dx = max(0, f.minX - p.x, p.x - f.maxX), dy = max(0, f.minY - p.y, p.y - f.maxY)
@@ -320,7 +379,9 @@ final class KeyboardView: UIView {
     }
 
     private func key(at p: CGPoint) -> KeyView? {
-        (layers[current] ?? []).joined().first { $0.frame.insetBy(dx: -gap / 2, dy: -gap / 2).contains(p) }
+        (layers[current] ?? []).joined().first {
+            $0.spec.kind != .spacer && $0.frame.insetBy(dx: -gap / 2, dy: -gap / 2).contains(p)
+        }
     }
 
     private func refreshKeys() {
@@ -422,7 +483,7 @@ final class KeyboardView: UIView {
             if [Keys.delete, Keys.forwardDelete, Keys.left, Keys.right, Keys.up, Keys.down].contains(s.code) {
                 startRepeat(k)
             }
-        case .mod:
+        case .mod, .spacer:
             break
         }
     }

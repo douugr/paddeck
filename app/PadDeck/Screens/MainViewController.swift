@@ -99,14 +99,19 @@ final class MainViewController: UIViewController {
         bar.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: safe.minY + barH)
         let barY = safe.minY
         dot.frame = CGRect(x: safe.minX + 14, y: barY + barH / 2 - 5, width: 10, height: 10)
-        let modeW: CGFloat = compact ? 180 : 300
-        mode.frame = CGRect(x: safe.midX - modeW / 2, y: barY + 8, width: modeW, height: 32)
         var x = safe.maxX - 6
         for b in [leaveButton, settingsButton, keyboardButton] {
             x -= 44
             b.frame = CGRect(x: x, y: barY + 2, width: 44, height: 44)
         }
-        statusLabel.isHidden = compact && view.bounds.width < 500
+        // The selector stays centered but never reaches the buttons or the status dot.
+        let buttonsLeft = (keyboardButton.isHidden ? settingsButton.frame.minX : keyboardButton.frame.minX) - 10
+        let half = min(safe.midX - (dot.frame.maxX + 10), buttonsLeft - safe.midX)
+        let narrowBar = safe.width < 500
+        setModeStyle(icons: narrowBar)
+        let modeW = min(narrowBar ? 120 : 300, max(0, half * 2))
+        mode.frame = CGRect(x: safe.midX - modeW / 2, y: barY + 8, width: modeW, height: 32)
+        statusLabel.isHidden = narrowBar
         statusLabel.frame = CGRect(x: dot.frame.maxX + 8, y: barY, width: max(0, mode.frame.minX - dot.frame.maxX - 16), height: barH)
 
         let content = CGRect(x: safe.minX + pad, y: barY + barH + pad,
@@ -114,8 +119,10 @@ final class MainViewController: UIViewController {
         deck.frame = content
 
         let showKb = Prefs.showKeyboard
-        let share: CGFloat = compact && content.height > content.width ? 0.42 : 0.52
-        let kbH = showKb ? floor(content.height * share) : 0
+        let portraitPhone = compact && content.height > content.width
+        // iPhone in portrait: rows about as tall as the iOS keyboard's; the rest goes to the trackpad.
+        let kbH = showKb ? (portraitPhone ? min(floor(content.height * 0.4), 4 * 54 + 3 * 5)
+                                          : floor(content.height * 0.52)) : 0
         let padH = content.height - kbH - (showKb ? pad : 0)
         keyboard.isHidden = !showKb || !deck.isHidden
         if Prefs.keyboardOnTop {
@@ -124,6 +131,24 @@ final class MainViewController: UIViewController {
         } else {
             keyboard.frame = CGRect(x: content.minX, y: content.maxY - kbH, width: content.width, height: kbH)
             trackpad.frame = CGRect(x: content.minX, y: content.minY, width: content.width, height: padH)
+        }
+    }
+
+    private var modeIcons: Bool?
+
+    /// Words on wide bars, symbols on narrow ones.
+    private func setModeStyle(icons: Bool) {
+        guard icons != modeIcons else { return }
+        modeIcons = icons
+        let items: [(String, String)] = [("Trackpad", "hand.point.up.left"), ("Atalhos", "square.grid.3x3.fill")]
+        for (i, item) in items.enumerated() {
+            if icons {
+                let image = UIImage(systemName: item.1)
+                image?.accessibilityLabel = item.0
+                mode.setImage(image, forSegmentAt: i)
+            } else {
+                mode.setTitle(item.0, forSegmentAt: i)
+            }
         }
     }
 
