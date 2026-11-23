@@ -23,7 +23,7 @@ final class MainViewController: UIViewController {
     private let bar = UIView()
     private let dot = UIView()
     private let statusLabel = UILabel()
-    private let mode = UISegmentedControl(items: ["Trackpad", "Atalhos"])
+    private let mode = UISegmentedControl(items: [String(localized: "Trackpad"), String(localized: "Shortcuts")])
     private let keyboardButton = UIButton(type: .system)
     private let settingsButton = UIButton(type: .system)
     private let leaveButton = UIButton(type: .system)
@@ -51,9 +51,9 @@ final class MainViewController: UIViewController {
         mode.addTarget(self, action: #selector(modeChanged), for: .valueChanged)
         bar.addSubview(mode)
 
-        setup(keyboardButton, symbol: "keyboard", label: "Mostrar ou esconder o teclado", action: #selector(toggleKeyboard))
-        setup(settingsButton, symbol: "gearshape", label: "Ajustes", action: #selector(openSettings))
-        setup(leaveButton, symbol: "rectangle.portrait.and.arrow.right", label: "Trocar de Mac", action: #selector(leave))
+        setup(keyboardButton, symbol: "keyboard", label: String(localized: "Show or hide the keyboard"), action: #selector(toggleKeyboard))
+        setup(settingsButton, symbol: "gearshape", label: String(localized: "Settings"), action: #selector(openSettings))
+        setup(leaveButton, symbol: "rectangle.portrait.and.arrow.right", label: String(localized: "Switch Mac"), action: #selector(leave))
 
         view.addSubview(trackpad)
         keyboard.onSystemKeyboard = { [weak self] in self?.toggleSystemKeyboard() }
@@ -140,7 +140,7 @@ final class MainViewController: UIViewController {
     private func setModeStyle(icons: Bool) {
         guard icons != modeIcons else { return }
         modeIcons = icons
-        let items: [(String, String)] = [("Trackpad", "hand.point.up.left"), ("Atalhos", "square.grid.3x3.fill")]
+        let items: [(String, String)] = [(String(localized: "Trackpad"), "hand.point.up.left"), (String(localized: "Shortcuts"), "square.grid.3x3.fill")]
         for (i, item) in items.enumerated() {
             if icons {
                 let image = UIImage(systemName: item.1)
@@ -156,13 +156,13 @@ final class MainViewController: UIViewController {
         switch state {
         case .connected:
             dot.backgroundColor = Theme.ok
-            statusLabel.text = usb ? "\(name ?? "Mac") · cabo" : name
+            statusLabel.text = usb ? String(localized: "\(name ?? "Mac") · cable") : name
         case .connecting:
             dot.backgroundColor = Theme.warn
-            statusLabel.text = "Reconectando…"
+            statusLabel.text = String(localized: "Reconnecting…")
         case .idle:
             dot.backgroundColor = Theme.off
-            statusLabel.text = "Desconectado"
+            statusLabel.text = String(localized: "Disconnected")
         }
     }
 

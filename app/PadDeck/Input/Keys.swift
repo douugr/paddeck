@@ -71,7 +71,7 @@ enum Keys {
         if mods.contains(.fn) { out += "fn " }
         let key = text.split(separator: "+").last.map { $0.trimmingCharacters(in: .whitespaces).lowercased() } ?? ""
         let pretty: [String: String] = [
-            "space": "Espaço", "tab": "⇥", "return": "↩", "enter": "↩", "esc": "esc", "escape": "esc",
+            "space": String(localized: "Space"), "tab": "⇥", "return": "↩", "enter": "↩", "esc": "esc", "escape": "esc",
             "delete": "⌫", "backspace": "⌫", "fwddelete": "⌦", "del": "⌦", "up": "↑", "down": "↓",
             "left": "←", "right": "→", "home": "↖", "end": "↘", "pgup": "⇞", "pageup": "⇞",
             "pgdn": "⇟", "pagedown": "⇟", "plus": "+", "minus": "-",
@@ -101,14 +101,14 @@ enum MediaKey: String, CaseIterable, Identifiable, Codable {
 
     var label: String {
         switch self {
-        case .play: return "Play"
-        case .prev: return "Anterior"
-        case .next: return "Próxima"
-        case .voldown: return "Vol −"
-        case .volup: return "Vol +"
-        case .mute: return "Mudo"
-        case .brightdown: return "Brilho −"
-        case .brightup: return "Brilho +"
+        case .play: return String(localized: "Play")
+        case .prev: return String(localized: "Previous")
+        case .next: return String(localized: "Next")
+        case .voldown: return String(localized: "Vol −")
+        case .volup: return String(localized: "Vol +")
+        case .mute: return String(localized: "Mute")
+        case .brightdown: return String(localized: "Brightness −")
+        case .brightup: return String(localized: "Brightness +")
         }
     }
 

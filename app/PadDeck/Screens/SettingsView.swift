@@ -27,55 +27,55 @@ struct SettingsView: View {
             Form {
                 Section {
                     VStack(alignment: .leading) {
-                        Text("Velocidade do cursor")
+                        Text("Pointer speed")
                         Slider(value: $pointerSpeed, in: 0.5...4)
                     }
                     VStack(alignment: .leading) {
-                        Text("Velocidade da rolagem")
+                        Text("Scroll speed")
                         Slider(value: $scrollSpeed, in: 0.5...4)
                     }
-                    Toggle("Rolagem natural", isOn: $naturalScroll)
-                    Toggle("Rolagem com inércia", isOn: $inertialScroll)
-                    Toggle("Tocar para clicar", isOn: $tapToClick)
-                    Toggle("Toque duplo e arraste", isOn: $tapToDrag)
+                    Toggle("Natural scrolling", isOn: $naturalScroll)
+                    Toggle("Momentum scrolling", isOn: $inertialScroll)
+                    Toggle("Tap to click", isOn: $tapToClick)
+                    Toggle("Double-tap and drag", isOn: $tapToDrag)
                 } header: {
                     Text("Trackpad")
                 } footer: {
-                    Text("Rolagem com inércia: deslize dois dedos rápido e solte para a página continuar rolando; encoste no trackpad para parar.\n\nToque duplo e arraste: toque uma vez e, logo em seguida, encoste e arraste para segurar o clique. Com ele ligado, o clique simples espera um instante.")
+                    Text("Momentum scrolling: swipe two fingers quickly and let go to keep the page scrolling; touch the trackpad to stop.\n\nDouble-tap and drag: tap once, then touch again and drag to hold the click. With it on, a single click waits a moment.")
                 }
 
-                Section("Teclado") {
-                    Toggle("Teclado em cima do trackpad", isOn: $keyboardOnTop)
-                    Toggle("Som ao tocar nas teclas", isOn: $keyClick)
-                    if isPhone { Toggle("Vibração ao tocar nas teclas", isOn: $keyHaptics) }
+                Section("Keyboard") {
+                    Toggle("Keyboard above the trackpad", isOn: $keyboardOnTop)
+                    Toggle("Key click sound", isOn: $keyClick)
+                    if isPhone { Toggle("Key haptics", isOn: $keyHaptics) }
                 }
 
-                Section("Geral") {
-                    Toggle("Manter a tela acesa", isOn: $keepAwake)
+                Section("General") {
+                    Toggle("Keep the screen on", isOn: $keepAwake)
                 }
 
                 Section {
-                    Button("Restaurar atalhos padrão", role: .destructive) { confirmReset = true }
+                    Button("Restore default shortcuts", role: .destructive) { confirmReset = true }
                 } footer: {
-                    Text("Para editar um botão, segure-o na tela de atalhos.")
+                    Text("To edit a button, touch and hold it on the Shortcuts screen.")
                 }
 
-                Section("Sobre") {
-                    LabeledContent("Versão", value: version)
-                    Link("PadDeck para Mac", destination: URL(string: "https://github.com/douugr/paddeck/releases/latest")!)
-                    Link("Código-fonte (MIT)", destination: URL(string: "https://github.com/douugr/paddeck")!)
+                Section("About") {
+                    LabeledContent("Version", value: version)
+                    Link("PadDeck for Mac", destination: URL(string: "https://github.com/douugr/paddeck/releases/latest")!)
+                    Link("Source code (MIT)", destination: URL(string: "https://github.com/douugr/paddeck")!)
                 }
             }
-            .navigationTitle("Ajustes")
+            .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) { Button("OK", action: onDone) }
             }
-            .alert("Restaurar atalhos?", isPresented: $confirmReset) {
-                Button("Cancelar", role: .cancel) {}
-                Button("Restaurar", role: .destructive) { Deck.shared.resetToDefaults() }
+            .alert("Restore shortcuts?", isPresented: $confirmReset) {
+                Button("Cancel", role: .cancel) {}
+                Button("Restore", role: .destructive) { Deck.shared.resetToDefaults() }
             } message: {
-                Text("Todos os botões voltam ao padrão. Os botões que você criou serão apagados.")
+                Text("All buttons go back to the defaults. Buttons you created will be deleted.")
             }
         }
         .preferredColorScheme(.dark)

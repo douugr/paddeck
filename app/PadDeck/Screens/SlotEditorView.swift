@@ -39,20 +39,20 @@ struct SlotEditorView: View {
     private var hint: (String, Color) {
         switch action {
         case .shortcut:
-            if value.isEmpty { return ("Modificadores: cmd, shift, ctrl, opt, fn. Teclas: letras, números, space, tab, return, esc, delete, up/down/left/right, f1–f12.", .secondary) }
-            if Keys.parseShortcut(value) != nil { return ("Envia \(Keys.prettyShortcut(value))", .green) }
-            return ("Atalho não reconhecido. Ex.: cmd+shift+4, ctrl+up, f11", .red)
-        case .text: return ("Digitado no Mac como texto (acentos funcionam).", .secondary)
-        case .open: return ("Nome do app (como aparece em Aplicativos), bundle id, caminho ou endereço web.", .secondary)
-        case .media: return ("Teclas de mídia do Mac.", .secondary)
+            if value.isEmpty { return (String(localized: "Modifiers: cmd, shift, ctrl, opt, fn. Keys: letters, numbers, space, tab, return, esc, delete, up/down/left/right, f1–f12."), .secondary) }
+            if Keys.parseShortcut(value) != nil { return (String(localized: "Sends \(Keys.prettyShortcut(value))"), .green) }
+            return (String(localized: "Shortcut not recognized. E.g. cmd+shift+4, ctrl+up, f11"), .red)
+        case .text: return (String(localized: "Typed on the Mac as text (accents work)."), .secondary)
+        case .open: return (String(localized: "App name (as shown in Applications), bundle ID, path or web address."), .secondary)
+        case .media: return (String(localized: "The Mac's media keys."), .secondary)
         }
     }
 
     private var placeholder: String {
         switch action {
         case .shortcut: return "cmd+shift+4"
-        case .text: return "Texto que será digitado"
-        case .open: return "Safari, com.apple.Music ou https://…"
+        case .text: return String(localized: "Text to type")
+        case .open: return String(localized: "Safari, com.apple.Music or https://…")
         case .media: return ""
         }
     }
@@ -60,16 +60,16 @@ struct SlotEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Nome") {
-                    TextField("Ex.: Captura de tela", text: $title)
+                Section("Name") {
+                    TextField("E.g. Screenshot", text: $title)
                 }
                 Section {
-                    Picker("Ação", selection: $action) {
+                    Picker("Action", selection: $action) {
                         ForEach(Slot.Action.allCases) { Text($0.label).tag($0) }
                     }
                     .pickerStyle(.segmented)
                     if action == .media {
-                        Picker("Tecla", selection: $media) {
+                        Picker("Key", selection: $media) {
                             ForEach(MediaKey.allCases) { m in Label(m.label, systemImage: m.symbol).tag(m) }
                         }
                     } else {
@@ -78,11 +78,11 @@ struct SlotEditorView: View {
                             .autocorrectionDisabled()
                     }
                 } header: {
-                    Text("Ação")
+                    Text("Action")
                 } footer: {
                     Text(hint.0).foregroundStyle(hint.1)
                 }
-                Section("Cor") {
+                Section("Color") {
                     HStack(spacing: 14) {
                         ForEach(Theme.deckColors.indices, id: \.self) { i in
                             Circle()
@@ -96,19 +96,19 @@ struct SlotEditorView: View {
                     .padding(.vertical, 4)
                 }
                 Section {
-                    Button("Testar no Mac") { current.perform() }
+                    Button("Try on the Mac") { current.perform() }
                         .disabled(!current.isValid)
                     if !isNew {
-                        Button("Apagar botão", role: .destructive) { onDone(.delete) }
+                        Button("Delete button", role: .destructive) { onDone(.delete) }
                     }
                 }
             }
-            .navigationTitle(isNew ? "Novo botão" : "Editar botão")
+            .navigationTitle(isNew ? String(localized: "New button") : String(localized: "Edit button"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancelar") { onDone(.cancel) } }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { onDone(.cancel) } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Salvar") { onDone(.save(current)) }.disabled(!current.isValid)
+                    Button("Save") { onDone(.save(current)) }.disabled(!current.isValid)
                 }
             }
         }

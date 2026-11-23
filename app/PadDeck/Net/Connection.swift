@@ -216,7 +216,7 @@ final class Connection: ObservableObject {
     private func fail(_ reason: String) {
         let wasUSB = usb
         close()
-        let message = wasUSB ? "Cabo desconectado" : reason
+        let message = wasUSB ? String(localized: "Cable disconnected") : reason
         if wanted, qTarget != nil {
             publish(.connecting, error: message)
             generation += 1
@@ -235,7 +235,7 @@ final class Connection: ObservableObject {
         t.setEventHandler { [weak self] in
             guard let self = self, self.tcp != nil else { return }
             if Date().timeIntervalSince(self.lastRx) > 6.5 {
-                self.fail("Conexão perdida")
+                self.fail(String(localized: "Connection lost"))
             } else {
                 self.sendFrame(.ping)
             }
@@ -288,7 +288,7 @@ final class Connection: ObservableObject {
             }
             guard c === self.tcp else { return }   // closed while parsing (DENIED)
             if done || err != nil {
-                self.fail("O Mac encerrou a conexão")
+                self.fail(String(localized: "The Mac closed the connection"))
             } else {
                 self.receive(c)
             }
@@ -337,9 +337,9 @@ final class Connection: ObservableObject {
                 self.lastDenyReason = reason
                 if reason == 1, let t = t { Prefs.setPin(nil, for: [t.displayName]) }   // forget the wrong PIN
             }
-            let message = reason == 2 ? "Muitas tentativas. Aguarde 1 minuto."
-                        : reason == 3 ? "Versão do PadDeck no Mac incompatível."
-                        : "PIN incorreto."
+            let message = reason == 2 ? String(localized: "Too many attempts. Wait a minute.")
+                        : reason == 3 ? String(localized: "The PadDeck version on the Mac isn't compatible.")
+                        : String(localized: "Wrong PIN.")
             publish(.idle, error: message)
 
         default:
@@ -349,17 +349,17 @@ final class Connection: ObservableObject {
 
     private static func describe(_ e: NWError) -> String {
         if case .dns(let code) = e, code == -65570 {   // kDNSServiceErr_PolicyDenied
-            return "Permita a Rede Local em Ajustes › PadDeck"
+            return String(localized: "Allow Local Network in Settings › PadDeck")
         }
         if case .posix(let p) = e {
             switch p {
-            case .ECONNREFUSED: return "O PadDeck não está aberto no Mac"
-            case .ETIMEDOUT: return "O Mac não respondeu"
-            case .ENETDOWN, .ENETUNREACH: return "Sem conexão com a rede"
+            case .ECONNREFUSED: return String(localized: "PadDeck isn't open on the Mac")
+            case .ETIMEDOUT: return String(localized: "The Mac didn't respond")
+            case .ENETDOWN, .ENETUNREACH: return String(localized: "No network connection")
             default: break
             }
         }
-        return "Não foi possível conectar"
+        return String(localized: "Couldn't connect")
     }
 
     // MARK: - USB cable (usbmuxd)

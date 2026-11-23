@@ -2,6 +2,7 @@
 name: PadDeck
 options:
   bundleIdPrefix: com.douglasneto
+  developmentLanguage: en
   deploymentTarget:
     iOS: "16.0"
   createIntermediateGroups: true
@@ -30,3 +31,5 @@ targets:
         SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
         SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD: NO
         ENABLE_USER_SCRIPT_SANDBOXING: YES
+        SWIFT_EMIT_LOC_STRINGS: YES
+        LOCALIZATION_PREFERS_STRING_CATALOGS: YES

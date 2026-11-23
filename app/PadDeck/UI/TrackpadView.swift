@@ -46,14 +46,14 @@ final class TrackpadView: UIView {
         surface.isUserInteractionEnabled = false
         addSubview(surface)
 
-        hint.text = "Trackpad"
+        hint.text = String(localized: "Trackpad")
         hint.textColor = UIColor(white: 1, alpha: 0.12)
         hint.font = .systemFont(ofSize: 28, weight: .light)
         hint.textAlignment = .center
         surface.addSubview(hint)
 
-        setup(leftButton, title: "Clique", tag: 0)
-        setup(rightButton, title: "Clique direito", tag: 1)
+        setup(leftButton, title: String(localized: "Click"), tag: 0)
+        setup(rightButton, title: String(localized: "Right click"), tag: 1)
     }
 
     required init?(coder: NSCoder) { fatalError() }

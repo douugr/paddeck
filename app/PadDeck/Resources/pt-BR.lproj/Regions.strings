@@ -1,0 +1,2 @@
+/* Unused table: makes XcodeGen list pt-BR (and en) in the project's known regions.
+   The real translations are in Localizable.xcstrings and InfoPlist.xcstrings. */

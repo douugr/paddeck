@@ -3,7 +3,12 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>pt-BR</string>
+	<string>en</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>pt-BR</string>
+	</array>
 	<key>CFBundleDisplayName</key>
 	<string>PadDeck</string>
 	<key>CFBundleExecutable</key>
@@ -27,7 +32,7 @@
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.utilities</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>O PadDeck procura o seu Mac na rede local para funcionar como teclado, trackpad e painel de atalhos.</string>
+	<string>PadDeck looks for your Mac on the local network to work as its keyboard, trackpad and shortcut deck.</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_paddeck._tcp</string>
