@@ -2,7 +2,8 @@
 # Builds build/PadDeck.app (the Mac agent, universal arm64 + x86_64).
 #   ./build.sh           build
 #   ./build.sh install   build, copy to /Applications and open it
-#   ./build.sh release   build and zip it as build/PadDeck-mac.zip for a GitHub release
+#   ./build.sh release   build and zip it as build/PadDeck-mac.zip for a GitHub release (ad-hoc signed)
+#   ./build.sh notarize  like release, but signed with your Developer ID and notarized by Apple
 set -euo pipefail
 cd "$(dirname "$0")"
 exec > >(tee build.log) 2>&1   # keep a copy of the output for debugging
@@ -33,6 +34,22 @@ case "${1:-}" in
     echo "Installed in /Applications. If the cursor doesn't move, remove PadDeck from"
     echo "System Settings > Privacy & Security > Accessibility and add it again"
     echo "(ad-hoc signatures change on every build)."
+    ;;
+  notarize)
+    # Signs with your Developer ID, notarizes with Apple and staples the ticket, then zips.
+    # One-time setup: see app/AppStore/RELEASE.md ("Notarize the Mac app").
+    IDENTITY="${DEVELOPER_ID:-Developer ID Application}"
+    PROFILE="${NOTARY_PROFILE:-paddeck-notary}"
+    codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP"
+    codesign --verify --strict --verbose=2 "$APP"
+    rm -f build/notarize.zip build/PadDeck-mac.zip
+    ditto -c -k --keepParent "$APP" build/notarize.zip
+    xcrun notarytool submit build/notarize.zip --keychain-profile "$PROFILE" --wait
+    xcrun stapler staple "$APP"
+    spctl --assess --type execute --verbose=2 "$APP"
+    ditto -c -k --keepParent "$APP" build/PadDeck-mac.zip
+    rm -f build/notarize.zip
+    echo "OK: build/PadDeck-mac.zip (signed, notarized and stapled)"
     ;;
   release)
     rm -f build/PadDeck-mac.zip
