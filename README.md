@@ -18,7 +18,8 @@ shortcut panel** for your Mac.
 - **USB cable mode**: plug the iPad into the Mac and it connects by itself through usbmuxd
   (no PIN, lower and steadier latency, charges while you use it). Unplug and it falls back to Wi-Fi.
 
-It has two parts: the iPad app and a small menu bar agent for the Mac.
+It has two parts: the iPad app and a small menu bar agent for the Mac. A version for current
+iPads and iPhones (iOS 16+, no jailbreak) lives in [`app/`](app/README.md).
 
 ## Mac agent
 
