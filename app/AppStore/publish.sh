@@ -83,18 +83,25 @@ fi
 # --- 3. Mac app: notarize + release ---------------------------------------------
 step "3/4 PadDeck para Mac $MAC_VERSION (assinado e notarizado)"
 if ask "Assinar com o Developer ID, notarizar e publicar o release v$MAC_VERSION?"; then
-  if ! security find-identity -v -p codesigning | grep -q "Developer ID Application"; then
+  has_devid() { [[ "$(security find-identity -v -p codesigning)" == *"Developer ID Application"* ]]; }
+  if ! has_devid; then
     echo "Falta o certificado 'Developer ID Application'."
     echo "Crie em: Xcode › Settings › Accounts › Manage Certificates › + › Developer ID Application"
     read -r -p "Pressione Enter quando tiver criado… " _ </dev/tty
-    security find-identity -v -p codesigning | grep -q "Developer ID Application" || fail "certificado não encontrado"
+    has_devid || fail "certificado não encontrado"
   fi
   if ! xcrun notarytool history --keychain-profile "$PROFILE" >/dev/null 2>&1; then
     echo "Primeira notarização: vou guardar suas credenciais no Keychain (perfil '$PROFILE')."
     echo "Você vai precisar de uma senha de app: account.apple.com › Login e Segurança › Senhas de app."
-    read -r -p "Apple ID (e-mail): " APPLE_ID </dev/tty
-    xcrun notarytool store-credentials "$PROFILE" --apple-id "$APPLE_ID" --team-id "$TEAM" </dev/tty \
-      || fail "não consegui guardar as credenciais"
+    read -r -p "Apple ID (e-mail da conta de desenvolvedor): " APPLE_ID </dev/tty
+    for attempt in 1 2; do
+      echo "Cole a senha de app no formato xxxx-xxxx-xxxx-xxxx (com os hífens; não é a senha normal da conta)."
+      if xcrun notarytool store-credentials "$PROFILE" --apple-id "$APPLE_ID" --team-id "$TEAM" </dev/tty; then
+        break
+      fi
+      [[ $attempt == 2 ]] && fail "não consegui guardar as credenciais (Apple ID ou senha de app incorretos)"
+      echo "Credenciais recusadas. Gere uma senha de app nova em account.apple.com e tente de novo."
+    done
   fi
   ./mac-agent/build.sh notarize || fail "a notarização falhou (detalhes acima)"
   if gh release view "v$MAC_VERSION" -R "$REPO" >/dev/null 2>&1; then
