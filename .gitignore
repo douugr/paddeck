@@ -4,3 +4,5 @@ build.log
 app/PadDeck.xcodeproj/
 xcuserdata/
 DerivedData/
+app/AppStore/publish.log
+app/build/
