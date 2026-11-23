@@ -459,7 +459,7 @@ final class Server {
     }
 
     private func notify() {
-        let names = sessions.values.filter { $0.authed }.map { $0.usb ? "\($0.name) (cabo)" : $0.name }
+        let names = sessions.values.filter { $0.authed }.map { $0.usb ? "\($0.name) " + tr("(cable)", "(cabo)") : $0.name }
         DispatchQueue.main.async {
             self.connectedNames = names
             self.delegate?.serverChanged()
@@ -754,6 +754,11 @@ final class USBMux {
     }
 }
 
+// MARK: - Localization (English, or Portuguese when the Mac is set to it)
+
+let isPortuguese = Locale.preferredLanguages.first?.hasPrefix("pt") ?? false
+func tr(_ en: String, _ pt: String) -> String { isPortuguese ? pt : en }
+
 // MARK: - Menu bar UI
 
 final class AppDelegate: NSObject, NSApplicationDelegate, ServerDelegate, NSMenuDelegate {
@@ -791,10 +796,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ServerDelegate, NSMenu
 
         let names = server.connectedNames
         let status: String
-        if let e = server.lastError { status = "Erro: \(e)" }
-        else if !names.isEmpty { status = "Conectado: " + names.joined(separator: ", ") }
-        else if server.listening { status = "Aguardando o iPad…" }
-        else { status = "Iniciando…" }
+        if let e = server.lastError { status = tr("Error: ", "Erro: ") + "\(e)" }
+        else if !names.isEmpty { status = tr("Connected: ", "Conectado: ") + names.joined(separator: ", ") }
+        else if server.listening { status = tr("Waiting for the iPhone or iPad…", "Aguardando o iPhone ou iPad…") }
+        else { status = tr("Starting…", "Iniciando…") }
         menu.addItem(disabled(status))
         item.button?.appearsDisabled = names.isEmpty
 
@@ -803,25 +808,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ServerDelegate, NSMenu
             string: "PIN: \(server.pin)",
             attributes: [.font: NSFont.monospacedDigitSystemFont(ofSize: 14, weight: .semibold)])
         menu.addItem(pinItem)
-        menu.addItem(action("Gerar novo PIN", #selector(newPIN)))
-        let smooth = action("Suavizar movimento no Wi-Fi", #selector(toggleSmooth))
+        menu.addItem(action(tr("New PIN", "Gerar novo PIN"), #selector(newPIN)))
+        let smooth = action(tr("Smooth movement over Wi-Fi", "Suavizar movimento no Wi-Fi"), #selector(toggleSmooth))
         smooth.state = Smoother.enabled ? .on : .off
         menu.addItem(smooth)
         menu.addItem(.separator())
 
         if AXIsProcessTrusted() {
-            menu.addItem(disabled("Acessibilidade: permitida ✓"))
+            menu.addItem(disabled(tr("Accessibility: allowed ✓", "Acessibilidade: permitida ✓")))
         } else {
-            menu.addItem(action("Permitir Acessibilidade…", #selector(openAccessibility)))
+            menu.addItem(action(tr("Allow Accessibility…", "Permitir Acessibilidade…"), #selector(openAccessibility)))
         }
 
         if #available(macOS 13.0, *) {
-            let login = action("Abrir ao iniciar sessão", #selector(toggleLogin))
+            let login = action(tr("Open at Login", "Abrir ao iniciar sessão"), #selector(toggleLogin))
             login.state = SMAppService.mainApp.status == .enabled ? .on : .off
             menu.addItem(login)
         }
         menu.addItem(.separator())
-        menu.addItem(action("Sair do PadDeck", #selector(quit)))
+        menu.addItem(action(tr("Quit PadDeck", "Sair do PadDeck"), #selector(quit)))
     }
 
     private func disabled(_ title: String) -> NSMenuItem {

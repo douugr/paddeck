@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PadDeck · Support</title><link rel="icon" href="icon-512.png"><style>
+:root{color-scheme:light dark;--bg:#f5f5f7;--card:#fff;--text:#1d1d1f;--muted:#6e6e73;--accent:#0a64d6}
+@media (prefers-color-scheme:dark){:root{--bg:#121214;--card:#1c1c1f;--text:#f5f5f7;--muted:#98989d;--accent:#4aa3ff}}
+*{box-sizing:border-box}body{margin:0;font:17px/1.55 -apple-system,BlinkMacSystemFont,"Helvetica Neue",Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
+.wrap{max-width:760px;margin:0 auto;padding:32px 20px 64px}
+header{display:flex;align-items:center;gap:16px;margin-bottom:28px}header img{width:72px;height:72px;border-radius:16px}
+h1{font-size:30px;margin:0}h2{font-size:21px;margin:28px 0 8px}.sub{color:var(--muted);margin:2px 0 0}
+.card{background:var(--card);border-radius:16px;padding:20px 24px;margin:0 0 16px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+ul{padding-left:22px}li{margin:4px 0}.muted{color:var(--muted);font-size:15px}
+nav{display:flex;gap:18px;flex-wrap:wrap;margin:-12px 0 24px;font-size:15px}
+.btn{display:inline-block;background:var(--accent);color:#fff;border-radius:10px;padding:10px 18px;font-weight:600}
+.btn:hover{text-decoration:none;opacity:.9}footer{margin-top:40px}
+</style></head>
+<body><div class="wrap">
+<header><img src="icon-512.png" alt=""><div><h1>PadDeck</h1><p class="sub">Keyboard, trackpad and shortcut deck for your Mac</p></div></header>
+<nav><a href="./">Home</a><a href="support.html">Support</a><a href="privacy.html">Privacy</a><a href="pt/">Português</a></nav>
+
+<div class="card"><h2 style="margin-top:0">Contact</h2><p>Questions, problems or ideas: <a href="https://github.com/douugr/paddeck/issues">open an issue on GitHub</a>. Please include your iPhone/iPad and macOS versions.</p></div>
+<div class="card"><h2 style="margin-top:0">Common questions</h2>
+<p><b>My Mac doesn't show up in the list.</b> Make sure PadDeck is open on the Mac (keyboard icon in the menu bar), both devices are on the same Wi-Fi network, and Local Network access is allowed in iOS Settings › PadDeck. You can also connect by IP, or use a USB cable.</p>
+<p><b>It connects but the pointer doesn't move.</b> Allow PadDeck in System Settings › Privacy &amp; Security › Accessibility on the Mac. If it's already there, remove it and add it again.</p>
+<p><b>The PIN is refused.</b> The PIN is shown in the PadDeck menu on the Mac and changes if you choose "New PIN". After 5 wrong attempts, wait a minute.</p>
+<p><b>The firewall asks about incoming connections.</b> Allow them for PadDeck: that's how the iPhone or iPad reaches the Mac.</p>
+<p><b>How do I use the cable?</b> Open PadDeck on the iPhone or iPad and plug it into the Mac. If iOS asks whether to trust the computer, tap Trust.</p>
+<p><b>Accents and emoji.</b> Hold a letter for accents, or tap the áç key to use the iOS keyboard (emoji and dictation).</p></div>
+<p><a class="btn" href="https://github.com/douugr/paddeck/releases/latest">Download PadDeck for Mac</a></p>
+
+<footer class="muted">© 2026 Douglas Rodrigues Neto · <a href="https://github.com/douugr/paddeck">github.com/douugr/paddeck</a></footer>
+</div></body></html>
