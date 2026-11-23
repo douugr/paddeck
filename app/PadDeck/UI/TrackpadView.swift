@@ -20,6 +20,13 @@ final class TrackpadView: UIView {
     private var secondTap = false   // a tap just happened and its click is on hold (tap-to-drag)
     private var clickTimer: Timer?
 
+    // Momentum scrolling ("flick" with two fingers, like a Mac trackpad)
+    private var scrollSamples: [(t: CFTimeInterval, x: Double, y: Double)] = []
+    private var momentum = CGPoint.zero          // px per second, already scaled and signed
+    private var momentumLink: CADisplayLink?
+    private var momentumLast: CFTimeInterval = 0
+    private var inertia = true
+
     private var pointerSpeed = 1.6, scrollSpeed = 1.5
     private var natural = true, tapToClick = true, tapToDrag = true
 
@@ -96,10 +103,13 @@ final class TrackpadView: UIView {
         natural = Prefs.naturalScroll
         tapToClick = Prefs.tapToClick
         tapToDrag = Prefs.tapToDrag
+        inertia = Prefs.inertialScroll
     }
 
     override func touchesBegan(_ new: Set<UITouch>, with event: UIEvent?) {
+        stopMomentum()   // touching the trackpad stops a flick, like on the Mac
         if touches.isEmpty {
+            scrollSamples.removeAll()
             loadPrefs()
             maxFingers = 0
             start = CACurrentMediaTime()
@@ -158,6 +168,9 @@ final class TrackpadView: UIView {
             let iy = Int(fy.rounded()), ix = Int(fx.rounded())
             scrollRem = CGPoint(x: fx - Double(ix), y: fy - Double(iy))
             conn.sendScroll(dy: iy, dx: ix)
+            let now = CACurrentMediaTime()
+            scrollSamples.append((now, Double(d.x) * scrollSpeed * sign, Double(d.y) * scrollSpeed * sign))
+            scrollSamples.removeAll { now - $0.t > 0.1 }
         } else if touches.count == 3 && !swipeFired {
             swipe.x += d.x
             swipe.y += d.y
@@ -176,12 +189,56 @@ final class TrackpadView: UIView {
     override func touchesEnded(_ ended: Set<UITouch>, with event: UIEvent?) { finish(ended, cancelled: false) }
     override func touchesCancelled(_ c: Set<UITouch>, with event: UIEvent?) { finish(c, cancelled: true) }
 
+    // MARK: Momentum
+
+    private func startMomentum() {
+        let now = CACurrentMediaTime()
+        // Speed of the last ~100 ms of the gesture; a pause before lifting means no flick.
+        guard let first = scrollSamples.first, let last = scrollSamples.last, now - last.t < 0.06 else { return }
+        let span = max(now - first.t, 1.0 / 60)
+        let vx = scrollSamples.reduce(0) { $0 + $1.x } / span
+        let vy = scrollSamples.reduce(0) { $0 + $1.y } / span
+        guard hypot(vx, vy) > 250 else { return }
+        momentum = CGPoint(x: vx, y: vy)
+        scrollRem = .zero
+        momentumLast = now
+        let link = CADisplayLink(target: self, selector: #selector(momentumTick(_:)))
+        link.add(to: .main, forMode: .common)
+        momentumLink = link
+    }
+
+    @objc private func momentumTick(_ link: CADisplayLink) {
+        let now = link.targetTimestamp
+        let dt = min(max(now - momentumLast, 0), 0.05)
+        momentumLast = now
+        // Friction close to macOS: speed drops ~5% every 1/60 s.
+        let decay = pow(0.95, dt * 60)
+        momentum = CGPoint(x: momentum.x * decay, y: momentum.y * decay)
+        guard hypot(momentum.x, momentum.y) > 30 else { stopMomentum(); return }
+        let fx = Double(momentum.x) * dt + scrollRem.x, fy = Double(momentum.y) * dt + scrollRem.y
+        let ix = Int(fx.rounded()), iy = Int(fy.rounded())
+        scrollRem = CGPoint(x: fx - Double(ix), y: fy - Double(iy))
+        conn.sendScroll(dy: iy, dx: ix)
+    }
+
+    private func stopMomentum() {
+        momentumLink?.invalidate()
+        momentumLink = nil
+        momentum = .zero
+    }
+
+    override func willMove(toWindow newWindow: UIWindow?) {
+        super.willMove(toWindow: newWindow)
+        if newWindow == nil { stopMomentum() }
+    }
+
     private func finish(_ ended: Set<UITouch>, cancelled: Bool) {
         touches.subtract(ended)
         guard touches.isEmpty else { return }
         surface.backgroundColor = Theme.surface
 
         let tap = !cancelled && CACurrentMediaTime() - start < tapMaxDuration && travel < tapMaxTravel
+        if maxFingers == 2 && !tap && !cancelled && inertia { startMomentum() }
         if dragging {
             dragging = false
             secondTap = false

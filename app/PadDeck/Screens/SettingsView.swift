@@ -6,6 +6,7 @@ struct SettingsView: View {
     @AppStorage("pointerSpeed") private var pointerSpeed = 1.6
     @AppStorage("scrollSpeed") private var scrollSpeed = 1.5
     @AppStorage("naturalScroll") private var naturalScroll = true
+    @AppStorage("inertialScroll") private var inertialScroll = true
     @AppStorage("tapToClick") private var tapToClick = true
     @AppStorage("tapToDrag") private var tapToDrag = true
     @AppStorage("keyboardOnTop") private var keyboardOnTop = false
@@ -34,12 +35,13 @@ struct SettingsView: View {
                         Slider(value: $scrollSpeed, in: 0.5...4)
                     }
                     Toggle("Rolagem natural", isOn: $naturalScroll)
+                    Toggle("Rolagem com inércia", isOn: $inertialScroll)
                     Toggle("Tocar para clicar", isOn: $tapToClick)
                     Toggle("Toque duplo e arraste", isOn: $tapToDrag)
                 } header: {
                     Text("Trackpad")
                 } footer: {
-                    Text("Toque duplo e arraste: toque uma vez e, logo em seguida, encoste e arraste para segurar o clique. Com ele ligado, o clique simples espera um instante.")
+                    Text("Rolagem com inércia: deslize dois dedos rápido e solte para a página continuar rolando; encoste no trackpad para parar.\n\nToque duplo e arraste: toque uma vez e, logo em seguida, encoste e arraste para segurar o clique. Com ele ligado, o clique simples espera um instante.")
                 }
 
                 Section("Teclado") {
