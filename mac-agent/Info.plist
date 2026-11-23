@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key>
+	<string>com.douglasneto.paddeck.agent</string>
+	<key>CFBundleName</key>
+	<string>PadDeck</string>
+	<key>CFBundleDisplayName</key>
+	<string>PadDeck</string>
+	<key>CFBundleExecutable</key>
+	<string>PadDeck</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>12.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>PadDeck listens on your local network so the iPad app can control this Mac.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_paddeck._tcp</string>
+	</array>
+</dict>
+</plist>

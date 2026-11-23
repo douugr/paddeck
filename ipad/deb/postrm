@@ -1,0 +1,3 @@
+#!/bin/sh
+su mobile -c uicache 2>/dev/null || uicache 2>/dev/null
+exit 0
