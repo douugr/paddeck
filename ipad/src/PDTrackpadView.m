@@ -29,6 +29,13 @@ static const NSTimeInterval kDragWindow = 0.22;  // delay before a single tap cl
     BOOL _secondTap;       // a tap happened just before this gesture and its click is on hold
     NSTimer *_clickTimer;
 
+    // Momentum scrolling ("flick" with two fingers, like a Mac trackpad)
+    NSMutableArray *_scrollSamples;    // @[time, dx, dy] of the last ~100 ms, scaled and signed
+    CADisplayLink *_momentumLink;
+    CGFloat _momentumX, _momentumY;    // px per second
+    CFTimeInterval _momentumLast;
+    BOOL _inertia;
+
     CGFloat _pointerSpeed, _scrollSpeed;
     BOOL _natural, _tapToClick, _tapToDrag;
 }
@@ -106,6 +113,7 @@ static const NSTimeInterval kDragWindow = 0.22;  // delay before a single tap cl
     _natural = [d boolForKey:PDPrefNaturalScroll];
     _tapToClick = [d boolForKey:PDPrefTapToClick];
     _tapToDrag = [d boolForKey:PDPrefTapToDrag];
+    _inertia = [d boolForKey:PDPrefInertialScroll];
 }
 
 - (BOOL)inSurface:(UITouch *)t {
@@ -113,7 +121,10 @@ static const NSTimeInterval kDragWindow = 0.22;  // delay before a single tap cl
 }
 
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {
+    [self stopMomentum];   // touching the trackpad stops a flick, like on the Mac
     if (_touches.count == 0) {
+        if (!_scrollSamples) _scrollSamples = [NSMutableArray array];
+        [_scrollSamples removeAllObjects];
         [self loadPrefs];
         _maxFingers = 0;
         _start = CACurrentMediaTime();
@@ -179,6 +190,9 @@ static const NSTimeInterval kDragWindow = 0.22;  // delay before a single tap cl
         _scrollRemY = fy - iy;
         _scrollRemX = fx - ix;
         [c sendScrollDY:iy dx:ix];
+        CFTimeInterval now = CACurrentMediaTime();
+        [_scrollSamples addObject:@[@(now), @(d.x * _scrollSpeed * sign), @(d.y * _scrollSpeed * sign)]];
+        while (_scrollSamples.count && now - [_scrollSamples[0][0] doubleValue] > 0.1) [_scrollSamples removeObjectAtIndex:0];
     } else if (_touches.count == 3 && !_swipeFired) {
         _swipe.x += d.x;
         _swipe.y += d.y;
@@ -202,6 +216,52 @@ static const NSTimeInterval kDragWindow = 0.22;  // delay before a single tap cl
     [self finish:touches cancelled:YES];
 }
 
+#pragma mark - Momentum
+
+- (void)startMomentum {
+    CFTimeInterval now = CACurrentMediaTime();
+    if (!_scrollSamples.count) return;
+    CFTimeInterval first = [_scrollSamples[0][0] doubleValue], last = [[_scrollSamples lastObject][0] doubleValue];
+    if (now - last > 0.06) return;   // paused before lifting: no flick
+    double sx = 0, sy = 0;
+    for (NSArray *s in _scrollSamples) { sx += [s[1] doubleValue]; sy += [s[2] doubleValue]; }
+    double span = MAX(now - first, 1.0 / 60);
+    double vx = sx / span, vy = sy / span;
+    if (hypot(vx, vy) < 250) return;
+    _momentumX = vx;
+    _momentumY = vy;
+    _scrollRemX = _scrollRemY = 0;
+    _momentumLast = now;
+    _momentumLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(momentumTick)];
+    [_momentumLink addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
+}
+
+- (void)momentumTick {
+    CFTimeInterval now = CACurrentMediaTime();
+    double dt = MIN(MAX(now - _momentumLast, 0), 0.05);
+    _momentumLast = now;
+    double decay = pow(0.95, dt * 60);   // friction close to macOS
+    _momentumX *= decay;
+    _momentumY *= decay;
+    if (hypot(_momentumX, _momentumY) < 30) { [self stopMomentum]; return; }
+    CGFloat fx = _momentumX * dt + _scrollRemX, fy = _momentumY * dt + _scrollRemY;
+    int ix = (int)lround(fx), iy = (int)lround(fy);
+    _scrollRemX = fx - ix;
+    _scrollRemY = fy - iy;
+    [[PDConnection shared] sendScrollDY:iy dx:ix];
+}
+
+- (void)stopMomentum {
+    [_momentumLink invalidate];
+    _momentumLink = nil;
+    _momentumX = _momentumY = 0;
+}
+
+- (void)willMoveToWindow:(UIWindow *)newWindow {
+    [super willMoveToWindow:newWindow];
+    if (!newWindow) [self stopMomentum];
+}
+
 - (void)finish:(NSSet *)touches cancelled:(BOOL)cancelled {
     for (UITouch *t in touches) [_touches removeObject:t];
     if (_touches.count > 0) return;
@@ -209,6 +269,7 @@ static const NSTimeInterval kDragWindow = 0.22;  // delay before a single tap cl
 
     PDConnection *c = [PDConnection shared];
     BOOL tap = !cancelled && (CACurrentMediaTime() - _start) < kTapMaxDuration && _travel < kTapMaxTravel;
+    if (_maxFingers == 2 && !tap && !cancelled && _inertia) [self startMomentum];
 
     if (_dragging) {
         _dragging = NO;

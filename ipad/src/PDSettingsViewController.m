@@ -4,7 +4,7 @@
 #import "PDTheme.h"
 
 typedef NS_ENUM(NSInteger, PDRow) {
-    RowPointer, RowScroll, RowNatural, RowTapClick, RowTapDrag,   // section 0
+    RowPointer, RowScroll, RowNatural, RowInertia, RowTapClick, RowTapDrag,   // section 0
     RowKeepAwake, RowKeyClick, RowKeyboardOnTop,                                   // section 1
     RowResetDeck,                                                 // section 2
     RowAbout,                                                     // section 3
@@ -32,7 +32,7 @@ typedef NS_ENUM(NSInteger, PDRow) {
 }
 
 - (NSArray *)sections {
-    return @[ @[@(RowPointer), @(RowScroll), @(RowNatural), @(RowTapClick), @(RowTapDrag)],
+    return @[ @[@(RowPointer), @(RowScroll), @(RowNatural), @(RowInertia), @(RowTapClick), @(RowTapDrag)],
               @[@(RowKeyboardOnTop), @(RowKeyClick), @(RowKeepAwake)],
               @[@(RowResetDeck)],
               @[@(RowAbout)] ];
@@ -53,7 +53,9 @@ typedef NS_ENUM(NSInteger, PDRow) {
 }
 
 - (NSString *)tableView:(UITableView *)tv titleForFooterInSection:(NSInteger)s {
-    if (s == 0) return @"Toque duplo e arraste: toque uma vez e, logo em seguida, encoste e arraste para "
+    if (s == 0) return @"Rolagem com inércia: deslize dois dedos rápido e solte para a página continuar rolando; "
+                       @"encoste no trackpad para parar.\n\n"
+                       @"Toque duplo e arraste: toque uma vez e, logo em seguida, encoste e arraste para "
                        @"segurar o clique. Com ele ligado, o clique simples espera um instante.";
     if (s == 2) return @"Para editar um botão, segure-o na tela de atalhos.";
     return nil;
@@ -111,6 +113,10 @@ typedef NS_ENUM(NSInteger, PDRow) {
         case RowScroll:
             c.textLabel.text = @"Velocidade da rolagem";
             c.accessoryView = [self sliderFor:PDPrefScrollSpeed];
+            break;
+        case RowInertia:
+            c.textLabel.text = @"Rolagem com inércia";
+            c.accessoryView = [self switchFor:PDPrefInertialScroll];
             break;
         case RowNatural:
             c.textLabel.text = @"Rolagem natural";
