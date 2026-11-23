@@ -151,10 +151,16 @@
 
     BOOL showKb = [[NSUserDefaults standardUserDefaults] boolForKey:PDPrefShowKeyboard];
     CGFloat kbH = showKb ? floor(content.size.height * 0.52) : 0;
+    BOOL kbOnTop = [[NSUserDefaults standardUserDefaults] boolForKey:PDPrefKeyboardOnTop];
+    CGFloat padH = content.size.height - kbH - (showKb ? pad : 0);
     self.keyboard.hidden = !showKb || !self.deck.hidden;
-    self.keyboard.frame = CGRectMake(content.origin.x, CGRectGetMaxY(content) - kbH, content.size.width, kbH);
-    self.trackpad.frame = CGRectMake(content.origin.x, content.origin.y, content.size.width,
-                                     content.size.height - kbH - (showKb ? pad : 0));
+    if (kbOnTop) {
+        self.keyboard.frame = CGRectMake(content.origin.x, content.origin.y, content.size.width, kbH);
+        self.trackpad.frame = CGRectMake(content.origin.x, CGRectGetMaxY(content) - padH, content.size.width, padH);
+    } else {
+        self.keyboard.frame = CGRectMake(content.origin.x, CGRectGetMaxY(content) - kbH, content.size.width, kbH);
+        self.trackpad.frame = CGRectMake(content.origin.x, content.origin.y, content.size.width, padH);
+    }
 }
 
 #pragma mark - Actions
@@ -182,6 +188,7 @@
     __weak PDMainViewController *weakSelf = self;
     s.onClose = ^{
         [weakSelf applyKeepAwake];
+        [weakSelf.view setNeedsLayout];
         [weakSelf.deck reload];
     };
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:s];

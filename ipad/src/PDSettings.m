@@ -10,6 +10,7 @@ void PDRegisterDefaults(void) {
         PDPrefKeepAwake: @YES,
         PDPrefShowKeyboard: @YES,
         PDPrefKeyClick: @YES,
+        PDPrefKeyboardOnTop: @NO,
         PDPrefPins: @{},
     }];
 }

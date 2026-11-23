@@ -8,6 +8,7 @@
 #define PDPrefTapToDrag      @"tapToDrag"       // bool (double-tap and drag)
 #define PDPrefKeepAwake      @"keepAwake"       // bool
 #define PDPrefShowKeyboard   @"showKeyboard"    // bool
+#define PDPrefKeyboardOnTop   @"keyboardOnTop"   // bool: keyboard above the trackpad
 #define PDPrefKeyClick       @"keyClick"        // bool: click sound on keys
 #define PDPrefLastHost       @"lastHost"        // string (IP)
 #define PDPrefLastName       @"lastName"        // string (Mac name)

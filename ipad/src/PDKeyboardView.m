@@ -429,13 +429,20 @@ static NSDictionary *Layers(void) {
     }
 }
 
+/// Above the key, or below it when the keyboard sits at the top of the screen.
+- (CGFloat)popupYForKey:(CGRect)f height:(CGFloat)h {
+    CGFloat above = CGRectGetMinY(f) - h - 6;
+    CGFloat topInWindow = [self convertPoint:CGPointMake(0, above) toView:nil].y;
+    return topInWindow >= 0 ? above : CGRectGetMaxY(f) + 6;
+}
+
 - (void)showPreview:(PDKeyView *)key {
     NSString *text = key.label.text;
     if (![key isCharKey] || [key.spec[K_CHAR] isEqualToString:@" "] || !text.length) return;
     CGRect f = key.frame;
     CGFloat w = f.size.width * 1.15, h = f.size.height * 0.95;
     _preview.text = text;
-    _preview.frame = CGRectMake(CGRectGetMidX(f) - w / 2, CGRectGetMinY(f) - h - 6, w, h);
+    _preview.frame = CGRectMake(CGRectGetMidX(f) - w / 2, [self popupYForKey:f height:h], w, h);
     _preview.hidden = NO;
     [self bringSubviewToFront:_preview];
     _previewKey = key;
@@ -600,7 +607,7 @@ static NSDictionary *Layers(void) {
     CGFloat cellW = MAX(64, f.size.width * 0.9), h = f.size.height;
     CGFloat w = cellW * variants.count;
     CGFloat x = MIN(MAX(0, CGRectGetMinX(f)), self.bounds.size.width - w);
-    UIView *box = [[UIView alloc] initWithFrame:CGRectMake(x, CGRectGetMinY(f) - h - 6, w, h)];
+    UIView *box = [[UIView alloc] initWithFrame:CGRectMake(x, [self popupYForKey:f height:h], w, h)];
     box.backgroundColor = PDColorKeyDark();
     box.layer.cornerRadius = 12;
     box.layer.borderWidth = 1;

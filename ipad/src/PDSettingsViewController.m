@@ -5,7 +5,7 @@
 
 typedef NS_ENUM(NSInteger, PDRow) {
     RowPointer, RowScroll, RowNatural, RowTapClick, RowTapDrag,   // section 0
-    RowKeepAwake, RowKeyClick,                                    // section 1
+    RowKeepAwake, RowKeyClick, RowKeyboardOnTop,                                   // section 1
     RowResetDeck,                                                 // section 2
     RowAbout,                                                     // section 3
 };
@@ -33,7 +33,7 @@ typedef NS_ENUM(NSInteger, PDRow) {
 
 - (NSArray *)sections {
     return @[ @[@(RowPointer), @(RowScroll), @(RowNatural), @(RowTapClick), @(RowTapDrag)],
-              @[@(RowKeyClick), @(RowKeepAwake)],
+              @[@(RowKeyboardOnTop), @(RowKeyClick), @(RowKeepAwake)],
               @[@(RowResetDeck)],
               @[@(RowAbout)] ];
 }
@@ -123,6 +123,10 @@ typedef NS_ENUM(NSInteger, PDRow) {
         case RowTapDrag:
             c.textLabel.text = @"Toque duplo e arraste";
             c.accessoryView = [self switchFor:PDPrefTapToDrag];
+            break;
+        case RowKeyboardOnTop:
+            c.textLabel.text = @"Teclado em cima do trackpad";
+            c.accessoryView = [self switchFor:PDPrefKeyboardOnTop];
             break;
         case RowKeyClick:
             c.textLabel.text = @"Som ao tocar nas teclas";

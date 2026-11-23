@@ -11,6 +11,7 @@ shortcut panel** for your Mac.
 - **Keyboard**: full Mac layout with esc/F1–F12, arrows and sticky ⌘ ⌥ ⌃ ⇧ (tap once for the
   next key, twice to lock). Text is sent as Unicode, so it works with any Mac keyboard layout.
   The **áç** key opens the iOS keyboard for accents, emoji and dictation.
+- **Layout**: keyboard below or above the trackpad (Settings), or hidden for a full-screen trackpad.
 - **Shortcuts**: 3 pages of 15 buttons. Each one sends a shortcut (`cmd+shift+4`), types text,
   opens an app or URL, or presses a media key. Hold a button to edit it.
 - Finds the Mac automatically (Bonjour), pairs with a 4-digit PIN, reconnects by itself.
