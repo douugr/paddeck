@@ -156,7 +156,9 @@ final class Connection: ObservableObject {
         let o = NWProtocolTCP.Options()
         o.noDelay = true
         o.connectionTimeout = 5
-        return NWParameters(tls: nil, tcp: o)
+        let p = NWParameters(tls: nil, tcp: o)
+        p.serviceClass = .responsiveData
+        return p
     }
 
     private func open() {
@@ -192,7 +194,10 @@ final class Connection: ObservableObject {
 
     private func openUDP(like c: NWConnection) {
         guard case let .hostPort(host, _)? = c.currentPath?.remoteEndpoint else { return }
-        let u = NWConnection(host: host, port: NWEndpoint.Port(rawValue: Proto.udpPort)!, using: .udp)
+        // Pointer packets go in the Wi-Fi voice queue (highest priority, least buffering).
+        let params = NWParameters.udp
+        params.serviceClass = .interactiveVoice
+        let u = NWConnection(host: host, port: NWEndpoint.Port(rawValue: Proto.udpPort)!, using: params)
         u.start(queue: q)
         udp = u
     }

@@ -264,6 +264,91 @@ final class Injector {
     }
 }
 
+// MARK: - Smoothing
+
+/// Wi-Fi delivers pointer packets in bursts (power saving, retries): applied as they come,
+/// the cursor stops and jumps. This replays them at a steady 120 Hz, spreading each burst
+/// over a few frames (~10–15 ms of delay). Clicks flush whatever is pending first.
+final class Smoother {
+    private let injector: Injector
+    private let queue: DispatchQueue
+    private var timer: DispatchSourceTimer?
+    private var mx = 0.0, my = 0.0   // pending pointer movement
+    private var sx = 0.0, sy = 0.0   // pending scroll
+    private var idleTicks = 0
+
+    static var enabled: Bool {
+        get { UserDefaults.standard.object(forKey: "smooth") as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: "smooth") }
+    }
+
+    init(injector: Injector, queue: DispatchQueue) {
+        self.injector = injector
+        self.queue = queue
+    }
+
+    func move(dx: Double, dy: Double) {
+        mx += dx
+        my += dy
+        start()
+    }
+
+    func scroll(dy: Double, dx: Double) {
+        sy += dy
+        sx += dx
+        start()
+    }
+
+    /// Applies everything pending right now (before a click, so it lands in the right place).
+    func flush() {
+        if mx != 0 || my != 0 { injector.move(dx: mx, dy: my) }
+        let ty = sy.rounded(), tx = sx.rounded()
+        if ty != 0 || tx != 0 { injector.scroll(dy: Int32(ty), dx: Int32(tx)) }
+        mx = 0; my = 0; sx = 0; sy = 0
+    }
+
+    private func start() {
+        idleTicks = 0
+        guard timer == nil else { return }
+        let t = DispatchSource.makeTimerSource(flags: .strict, queue: queue)
+        t.schedule(deadline: .now(), repeating: .nanoseconds(8_333_333), leeway: .microseconds(500))
+        t.setEventHandler { [weak self] in self?.tick() }
+        t.resume()
+        timer = t
+    }
+
+    private func tick() {
+        // Each frame moves half of what's pending: a steady stream passes straight through,
+        // a burst is spread over the next few frames.
+        let share = 0.5
+        let ox = abs(mx) < 1.5 ? mx : mx * share
+        let oy = abs(my) < 1.5 ? my : my * share
+        if ox != 0 || oy != 0 {
+            injector.move(dx: ox, dy: oy)
+            mx -= ox
+            my -= oy
+        }
+        let ty = (abs(sy) < 2 ? sy : sy * share).rounded()
+        let tx = (abs(sx) < 2 ? sx : sx * share).rounded()
+        if ty != 0 || tx != 0 {
+            injector.scroll(dy: Int32(ty), dx: Int32(tx))
+            sy -= ty
+            sx -= tx
+        }
+        if mx == 0 && my == 0 && abs(sx) < 0.5 && abs(sy) < 0.5 {
+            sx = 0; sy = 0
+            idleTicks += 1
+            if idleTicks > 120 {   // 1 s without input: stop the timer
+                timer?.cancel()
+                timer = nil
+                idleTicks = 0
+            }
+        } else {
+            idleTicks = 0
+        }
+    }
+}
+
 // MARK: - Sessions
 
 final class Session {
@@ -294,6 +379,7 @@ protocol ServerDelegate: AnyObject {
 final class Server {
     let queue = DispatchQueue(label: "paddeck.server")
     let injector = Injector()
+    private lazy var smoother = Smoother(injector: injector, queue: queue)
     weak var delegate: ServerDelegate?
 
     private var tcp: NWListener?
@@ -457,7 +543,7 @@ final class Server {
         case Proto.ping: s.send(frame(Proto.pong))
         default:
             guard s.authed else { return }
-            command(type, p)
+            command(type, p, smooth: !s.usb)
         }
     }
 
@@ -493,14 +579,18 @@ final class Server {
     }
 
     /// Everything after authentication; shared by TCP and UDP.
-    private func command(_ type: UInt8, _ p: Data) {
+    private func command(_ type: UInt8, _ p: Data, smooth: Bool) {
+        let smoothing = smooth && Smoother.enabled
         switch type {
         case Proto.button where p.count >= 2:
+            smoother.flush()
             injector.button(Int(p.u8(0)), action: Int(p.u8(1)))
         case Proto.move where p.count >= 4:
-            injector.move(dx: Double(p.i16(0)), dy: Double(p.i16(2)))
+            if smoothing { smoother.move(dx: Double(p.i16(0)), dy: Double(p.i16(2))) }
+            else { injector.move(dx: Double(p.i16(0)), dy: Double(p.i16(2))) }
         case Proto.scroll where p.count >= 4:
-            injector.scroll(dy: Int32(p.i16(0)), dx: Int32(p.i16(2)))
+            if smoothing { smoother.scroll(dy: Double(p.i16(0)), dx: Double(p.i16(2))) }
+            else { injector.scroll(dy: Int32(p.i16(0)), dx: Int32(p.i16(2))) }
         case Proto.text:
             if let t = String(data: p, encoding: .utf8) { injector.type(t) }
         case Proto.key where p.count >= 4:
@@ -530,7 +620,7 @@ final class Server {
                     s.lastSeen = Date()
                     let type = d.u8(4)
                     if type == Proto.move || type == Proto.scroll {
-                        self.command(type, d.sub(5))
+                        self.command(type, d.sub(5), smooth: true)
                     }
                 }
             }
@@ -714,6 +804,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ServerDelegate, NSMenu
             attributes: [.font: NSFont.monospacedDigitSystemFont(ofSize: 14, weight: .semibold)])
         menu.addItem(pinItem)
         menu.addItem(action("Gerar novo PIN", #selector(newPIN)))
+        let smooth = action("Suavizar movimento no Wi-Fi", #selector(toggleSmooth))
+        smooth.state = Smoother.enabled ? .on : .off
+        menu.addItem(smooth)
         menu.addItem(.separator())
 
         if AXIsProcessTrusted() {
@@ -741,6 +834,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ServerDelegate, NSMenu
         let i = NSMenuItem(title: title, action: sel, keyEquivalent: "")
         i.target = self
         return i
+    }
+
+    @objc func toggleSmooth() {
+        Smoother.enabled.toggle()
+        rebuild()
     }
 
     @objc func newPIN() {

@@ -185,6 +185,8 @@ enum {
         ua.sin_port = htons(kUDPPort);
         fcntl(u, F_SETFL, fcntl(u, F_GETFL, 0) | O_NONBLOCK);
         setsockopt(u, SOL_SOCKET, SO_NOSIGPIPE, &one, sizeof one);
+        int tos = 0xB8;   // DSCP EF: Wi-Fi voice queue (highest priority, least buffering)
+        setsockopt(u, IPPROTO_IP, IP_TOS, &tos, sizeof tos);
         if (connect(u, (struct sockaddr *)&ua, sizeof ua) == 0) _udp = u;
         else close(u);
     }
