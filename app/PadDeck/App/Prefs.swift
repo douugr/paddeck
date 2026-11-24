@@ -17,6 +17,8 @@ enum Prefs {
             "keyClick": true,
             "keyHaptics": true,
             "inertialScroll": true,
+            "scrollStrip": true,
+            "scrollStripLeft": false,
         ])
     }
 
@@ -30,6 +32,8 @@ enum Prefs {
     static var keyboardOnTop: Bool { get { d.bool(forKey: "keyboardOnTop") } set { d.set(newValue, forKey: "keyboardOnTop") } }
     static var keyClick: Bool { get { d.bool(forKey: "keyClick") } set { d.set(newValue, forKey: "keyClick") } }
     static var inertialScroll: Bool { get { d.bool(forKey: "inertialScroll") } set { d.set(newValue, forKey: "inertialScroll") } }
+    static var scrollStrip: Bool { get { d.bool(forKey: "scrollStrip") } set { d.set(newValue, forKey: "scrollStrip") } }
+    static var scrollStripLeft: Bool { get { d.bool(forKey: "scrollStripLeft") } set { d.set(newValue, forKey: "scrollStripLeft") } }
     static var keyHaptics: Bool { get { d.bool(forKey: "keyHaptics") } set { d.set(newValue, forKey: "keyHaptics") } }
 
     /// Last Mac connected to: Bonjour name and/or IP.

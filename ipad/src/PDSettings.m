@@ -12,6 +12,8 @@ void PDRegisterDefaults(void) {
         PDPrefKeyClick: @YES,
         PDPrefInertialScroll: @YES,
         PDPrefKeyboardOnTop: @NO,
+        PDPrefScrollStrip: @YES,
+        PDPrefScrollStripLeft: @NO,
         PDPrefPins: @{},
     }];
 }

@@ -2,12 +2,19 @@ import UIKit
 
 /// Touch surface: 1 finger moves, tap clicks, 2-finger tap right-clicks, 2 fingers scroll,
 /// double-tap-and-drag drags, 3-finger swipes switch Spaces / open Mission Control.
-/// The bottom strip has holdable left/right buttons.
+/// The bottom strip has holdable left/right buttons. An optional scroll strip on one edge
+/// scrolls with a single finger (handy on iPhone, held in one hand).
 final class TrackpadView: UIView {
     private let surface = UIView()
     private let hint = UILabel()
     private let leftButton = UIButton(type: .custom)
     private let rightButton = UIButton(type: .custom)
+
+    // Scroll strip: one finger sliding along the edge scrolls vertically.
+    private let strip = UIView()
+    private let stripGrip = UIStackView()
+    private var stripOn = true, stripLeft = false
+    private var stripTouch: UITouch?
 
     private var touches = Set<UITouch>()
     private var maxFingers = 0
@@ -52,8 +59,32 @@ final class TrackpadView: UIView {
         hint.textAlignment = .center
         surface.addSubview(hint)
 
+        strip.backgroundColor = Theme.keyDark
+        strip.layer.cornerRadius = 12
+        strip.layer.cornerCurve = .continuous
+        strip.isUserInteractionEnabled = false
+        stripGrip.axis = .vertical
+        stripGrip.alignment = .center
+        stripGrip.spacing = 6
+        let cfg = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
+        for name in ["chevron.up", "line.3.horizontal", "chevron.down"] {
+            let iv = UIImageView(image: UIImage(systemName: name, withConfiguration: cfg))
+            iv.tintColor = UIColor(white: 1, alpha: 0.25)
+            stripGrip.addArrangedSubview(iv)
+        }
+        strip.addSubview(stripGrip)
+        surface.addSubview(strip)
+        strip.isAccessibilityElement = true
+        strip.accessibilityLabel = String(localized: "Scroll strip")
+
         setup(leftButton, title: String(localized: "Click"), tag: 0)
         setup(rightButton, title: String(localized: "Right click"), tag: 1)
+
+        stripOn = Prefs.scrollStrip
+        stripLeft = Prefs.scrollStripLeft
+        // Settings are a sheet over this view: follow changes right away.
+        NotificationCenter.default.addObserver(self, selector: #selector(applyStripPrefs),
+                                               name: UserDefaults.didChangeNotification, object: nil)
     }
 
     required init?(coder: NSCoder) { fatalError() }
@@ -76,7 +107,20 @@ final class TrackpadView: UIView {
         let gap: CGFloat = 8
         let buttonsH: CGFloat = Theme.isCompact(self) ? 44 : 56
         surface.frame = CGRect(x: 0, y: 0, width: bounds.width, height: bounds.height - buttonsH - gap)
-        hint.frame = surface.bounds
+        let stripW: CGFloat = Theme.isCompact(self) ? 40 : 52
+        let inset: CGFloat = 6
+        strip.isHidden = !stripOn
+        strip.frame = CGRect(x: stripLeft ? inset : surface.bounds.width - stripW - inset, y: inset,
+                             width: stripW, height: max(surface.bounds.height - inset * 2, 0))
+        stripGrip.bounds.size = stripGrip.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
+        stripGrip.center = CGPoint(x: strip.bounds.midX, y: strip.bounds.midY)
+        // Keep the hint centred in the area that still moves the pointer.
+        var free = surface.bounds
+        if stripOn {
+            free.size.width -= stripW + inset
+            if stripLeft { free.origin.x += stripW + inset }
+        }
+        hint.frame = free
         let w = (bounds.width - gap) / 2
         let y = bounds.height - buttonsH
         leftButton.frame = CGRect(x: 0, y: y, width: w, height: buttonsH)
@@ -104,10 +148,38 @@ final class TrackpadView: UIView {
         tapToClick = Prefs.tapToClick
         tapToDrag = Prefs.tapToDrag
         inertia = Prefs.inertialScroll
+        applyStripPrefs()
+    }
+
+    /// Reads the strip settings; relayouts only when they changed.
+    @objc private func applyStripPrefs() {
+        let on = Prefs.scrollStrip, left = Prefs.scrollStripLeft
+        guard on != stripOn || left != stripLeft else { return }
+        stripOn = on
+        stripLeft = left
+        if Thread.isMainThread { setNeedsLayout() } else { DispatchQueue.main.async { self.setNeedsLayout() } }
+    }
+
+    private func stripContains(_ t: UITouch) -> Bool {
+        guard stripOn, !strip.isHidden else { return false }
+        // A little extra margin on the inner side makes the edge easy to hit.
+        let r = surface.convert(strip.frame, to: self).insetBy(dx: -6, dy: 0)
+        return r.contains(t.location(in: self))
     }
 
     override func touchesBegan(_ new: Set<UITouch>, with event: UIEvent?) {
         stopMomentum()   // touching the trackpad stops a flick, like on the Mac
+        if stripTouch != nil { return }   // the strip owns the gesture until that finger lifts
+        if touches.isEmpty {
+            loadPrefs()
+            if clickTimer == nil, let t = new.first(where: stripContains) {
+                stripTouch = t
+                scrollSamples.removeAll()
+                scrollRem = .zero
+                strip.backgroundColor = Theme.keyActive
+                return
+            }
+        }
         if touches.isEmpty {
             scrollSamples.removeAll()
             loadPrefs()
@@ -145,6 +217,20 @@ final class TrackpadView: UIView {
     }
 
     override func touchesMoved(_ moved: Set<UITouch>, with event: UIEvent?) {
+        if let t = stripTouch {
+            guard moved.contains(t) else { return }
+            let dy = t.location(in: self).y - t.previousLocation(in: self).y
+            // A bit faster than two fingers: the strip is short and used with the thumb.
+            let v = Double(dy) * scrollSpeed * 1.5 * (natural ? 1 : -1)
+            let fy = v + scrollRem.y
+            let iy = Int(fy.rounded())
+            scrollRem.y = fy - Double(iy)
+            if iy != 0 { conn.sendScroll(dy: iy, dx: 0) }
+            let now = CACurrentMediaTime()
+            scrollSamples.append((now, 0, v))
+            scrollSamples.removeAll { now - $0.t > 0.1 }
+            return
+        }
         guard !touches.isEmpty else { return }
         let d = averageDelta()
         let dist = hypot(d.x, d.y)
@@ -233,6 +319,13 @@ final class TrackpadView: UIView {
     }
 
     private func finish(_ ended: Set<UITouch>, cancelled: Bool) {
+        if let t = stripTouch {
+            guard ended.contains(t) else { return }
+            stripTouch = nil
+            strip.backgroundColor = Theme.keyDark
+            if !cancelled && inertia { startMomentum() }
+            return
+        }
         touches.subtract(ended)
         guard touches.isEmpty else { return }
         surface.backgroundColor = Theme.surface

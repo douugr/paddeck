@@ -7,6 +7,8 @@ struct SettingsView: View {
     @AppStorage("scrollSpeed") private var scrollSpeed = 1.5
     @AppStorage("naturalScroll") private var naturalScroll = true
     @AppStorage("inertialScroll") private var inertialScroll = true
+    @AppStorage("scrollStrip") private var scrollStrip = true
+    @AppStorage("scrollStripLeft") private var scrollStripLeft = false
     @AppStorage("tapToClick") private var tapToClick = true
     @AppStorage("tapToDrag") private var tapToDrag = true
     @AppStorage("keyboardOnTop") private var keyboardOnTop = false
@@ -36,12 +38,14 @@ struct SettingsView: View {
                     }
                     Toggle("Natural scrolling", isOn: $naturalScroll)
                     Toggle("Momentum scrolling", isOn: $inertialScroll)
+                    Toggle("Scroll strip", isOn: $scrollStrip)
+                    if scrollStrip { Toggle("Strip on the left", isOn: $scrollStripLeft) }
                     Toggle("Tap to click", isOn: $tapToClick)
                     Toggle("Double-tap and drag", isOn: $tapToDrag)
                 } header: {
                     Text("Trackpad")
                 } footer: {
-                    Text("Momentum scrolling: swipe two fingers quickly and let go to keep the page scrolling; touch the trackpad to stop.\n\nDouble-tap and drag: tap once, then touch again and drag to hold the click. With it on, a single click waits a moment.")
+                    Text("Momentum scrolling: swipe two fingers quickly and let go to keep the page scrolling; touch the trackpad to stop.\n\nScroll strip: slide one finger along the edge of the trackpad to scroll.\n\nDouble-tap and drag: tap once, then touch again and drag to hold the click. With it on, a single click waits a moment.")
                 }
 
                 Section("Keyboard") {
