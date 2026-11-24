@@ -5,10 +5,100 @@
 
 typedef NS_ENUM(NSInteger, PDRow) {
     RowPointer, RowScroll, RowNatural, RowInertia, RowStrip, RowStripLeft, RowTapClick, RowTapDrag,   // section 0
-    RowKeepAwake, RowKeyClick, RowKeyboardOnTop,                                   // section 1
+    RowKeepAwake, RowKeyClick, RowKeyboardOnTop, RowTheme,                         // section 1
     RowResetDeck,                                                 // section 2
     RowAbout,                                                     // section 3
 };
+
+#pragma mark - Color profiles
+
+/// Miniature of the main screen: background, trackpad and a row of keys.
+static UIImage *PDPaletteSwatch(const PDPalette *p) {
+    CGSize size = CGSizeMake(58, 40);
+    UIGraphicsBeginImageContextWithOptions(size, NO, 0);
+    [PDRGB(p->background) setFill];
+    [[UIBezierPath bezierPathWithRoundedRect:CGRectMake(0.5, 0.5, 57, 39) cornerRadius:7] fill];
+    [[UIColor colorWithWhite:1 alpha:0.2] setStroke];
+    [[UIBezierPath bezierPathWithRoundedRect:CGRectMake(0.5, 0.5, 57, 39) cornerRadius:7] stroke];
+    [PDRGB(p->surface) setFill];
+    [[UIBezierPath bezierPathWithRoundedRect:CGRectMake(5, 5, 48, 14) cornerRadius:3] fill];
+    CGFloat w = (48 - 4 * 2) / 5.0;
+    for (int i = 0; i < 5; i++) {
+        [PDRGB(i == 4 ? p->accent : p->key) setFill];
+        [[UIBezierPath bezierPathWithRoundedRect:CGRectMake(5 + i * (w + 2), 22, w, 12) cornerRadius:2] fill];
+    }
+    UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return img;
+}
+
+/// List of profiles grouped by Mac line.
+@interface PDThemePickerController : UITableViewController
+@end
+
+@implementation PDThemePickerController {
+    NSArray *_lines;      // NSString line names, in order
+    NSArray *_rows;       // NSArray of NSNumber palette indexes, per line
+}
+
+- (instancetype)init {
+    if ((self = [super initWithStyle:UITableViewStyleGrouped])) {
+        NSMutableArray *lines = [NSMutableArray array], *rows = [NSMutableArray array];
+        for (NSUInteger i = 0; i < PDPaletteCount(); i++) {
+            NSString *line = [NSString stringWithUTF8String:PDPaletteAt(i)->line];
+            NSUInteger s = [lines indexOfObject:line];
+            if (s == NSNotFound) { [lines addObject:line]; [rows addObject:[NSMutableArray array]]; s = lines.count - 1; }
+            [rows[s] addObject:@(i)];
+        }
+        _lines = lines;
+        _rows = rows;
+    }
+    return self;
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    self.title = @"Cores";
+    self.tableView.backgroundColor = PDColorDarkBar();
+    self.tableView.separatorColor = [UIColor colorWithWhite:1 alpha:0.08];
+    self.tableView.rowHeight = 56;
+}
+
+- (const PDPalette *)paletteAt:(NSIndexPath *)ip {
+    return PDPaletteAt([_rows[(NSUInteger)ip.section][(NSUInteger)ip.row] unsignedIntegerValue]);
+}
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tv { return (NSInteger)_lines.count; }
+- (NSInteger)tableView:(UITableView *)tv numberOfRowsInSection:(NSInteger)s { return (NSInteger)[_rows[(NSUInteger)s] count]; }
+- (NSString *)tableView:(UITableView *)tv titleForHeaderInSection:(NSInteger)s { return _lines[(NSUInteger)s]; }
+
+- (void)tableView:(UITableView *)tv willDisplayHeaderView:(UIView *)view forSection:(NSInteger)s {
+    if ([view isKindOfClass:[UITableViewHeaderFooterView class]])
+        ((UITableViewHeaderFooterView *)view).textLabel.textColor = [UIColor colorWithWhite:1 alpha:0.5];
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tv cellForRowAtIndexPath:(NSIndexPath *)ip {
+    const PDPalette *p = [self paletteAt:ip];
+    UITableViewCell *c = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
+    c.backgroundColor = PDColorDarkSurface();
+    c.textLabel.textColor = [UIColor whiteColor];
+    c.textLabel.text = [NSString stringWithUTF8String:p->name];
+    c.imageView.image = PDPaletteSwatch(p);
+    NSString *cur = [[NSUserDefaults standardUserDefaults] stringForKey:PDPrefTheme] ?: @"dark";
+    c.accessoryType = strcmp(p->ident, cur.UTF8String) == 0 ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
+    c.tintColor = PDColorBlue();
+    return c;
+}
+
+- (void)tableView:(UITableView *)tv didSelectRowAtIndexPath:(NSIndexPath *)ip {
+    [[NSUserDefaults standardUserDefaults] setObject:[NSString stringWithUTF8String:[self paletteAt:ip]->ident]
+                                              forKey:PDPrefTheme];
+    [tv reloadData];
+}
+
+@end
+
+#pragma mark - Settings
 
 @implementation PDSettingsViewController
 
@@ -21,9 +111,14 @@ typedef NS_ENUM(NSInteger, PDRow) {
     self.title = @"Ajustes";
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc]
         initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(done)];
-    self.tableView.backgroundColor = PDColorBar();
+    self.tableView.backgroundColor = PDColorDarkBar();
     self.tableView.separatorColor = [UIColor colorWithWhite:1 alpha:0.08];
     self.tableView.rowHeight = 56;
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    [self.tableView reloadData];   // back from the color list
 }
 
 - (void)done {
@@ -36,7 +131,7 @@ typedef NS_ENUM(NSInteger, PDRow) {
     if ([[NSUserDefaults standardUserDefaults] boolForKey:PDPrefScrollStrip]) [pad addObject:@(RowStripLeft)];
     [pad addObjectsFromArray:@[@(RowTapClick), @(RowTapDrag)]];
     return @[ pad,
-              @[@(RowKeyboardOnTop), @(RowKeyClick), @(RowKeepAwake)],
+              @[@(RowTheme), @(RowKeyboardOnTop), @(RowKeyClick), @(RowKeepAwake)],
               @[@(RowResetDeck)],
               @[@(RowAbout)] ];
 }
@@ -61,6 +156,7 @@ typedef NS_ENUM(NSInteger, PDRow) {
                        @"Faixa de rolagem: deslize um dedo pela borda do trackpad para rolar.\n\n"
                        @"Toque duplo e arraste: toque uma vez e, logo em seguida, encoste e arraste para "
                        @"segurar o clique. Com ele ligado, o clique simples espera um instante.";
+    if (s == 1) return @"Cores: deixe o PadDeck com a cor do seu Mac. As novas cores são aplicadas quando você fecha os Ajustes.";
     if (s == 2) return @"Para editar um botão, segure-o na tela de atalhos.";
     return nil;
 }
@@ -80,7 +176,7 @@ typedef NS_ENUM(NSInteger, PDRow) {
     s.minimumValue = 0.5;
     s.maximumValue = 4;
     s.value = [[NSUserDefaults standardUserDefaults] floatForKey:key];
-    s.minimumTrackTintColor = PDColorAccent();
+    s.minimumTrackTintColor = PDColorBlue();
     s.accessibilityIdentifier = key;
     [s addTarget:self action:@selector(sliderChanged:) forControlEvents:UIControlEventValueChanged];
     return s;
@@ -111,7 +207,7 @@ typedef NS_ENUM(NSInteger, PDRow) {
 
 - (UITableViewCell *)tableView:(UITableView *)tv cellForRowAtIndexPath:(NSIndexPath *)ip {
     UITableViewCell *c = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:nil];
-    c.backgroundColor = PDColorSurface();
+    c.backgroundColor = PDColorDarkSurface();
     c.textLabel.textColor = [UIColor whiteColor];
     c.detailTextLabel.textColor = [UIColor colorWithWhite:1 alpha:0.45];
     c.selectionStyle = UITableViewCellSelectionStyleNone;
@@ -148,6 +244,16 @@ typedef NS_ENUM(NSInteger, PDRow) {
             c.textLabel.text = @"Toque duplo e arraste";
             c.accessoryView = [self switchFor:PDPrefTapToDrag];
             break;
+        case RowTheme: {
+            const PDPalette *p = PDPaletteNamed([[NSUserDefaults standardUserDefaults] stringForKey:PDPrefTheme]);
+            c.textLabel.text = @"Cores";
+            c.detailTextLabel.text = [NSString stringWithFormat:@"%@ · %@", [NSString stringWithUTF8String:p->line], [NSString stringWithUTF8String:p->name]];
+            if (strcmp(p->line, "PadDeck") == 0) c.detailTextLabel.text = [NSString stringWithUTF8String:p->name];
+            c.imageView.image = PDPaletteSwatch(p);
+            c.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+            c.selectionStyle = UITableViewCellSelectionStyleDefault;
+            break;
+        }
         case RowKeyboardOnTop:
             c.textLabel.text = @"Teclado em cima do trackpad";
             c.accessoryView = [self switchFor:PDPrefKeyboardOnTop];
@@ -177,6 +283,10 @@ typedef NS_ENUM(NSInteger, PDRow) {
 
 - (void)tableView:(UITableView *)tv didSelectRowAtIndexPath:(NSIndexPath *)ip {
     [tv deselectRowAtIndexPath:ip animated:YES];
+    if ([self rowAt:ip] == RowTheme) {
+        [self.navigationController pushViewController:[[PDThemePickerController alloc] init] animated:YES];
+        return;
+    }
     if ([self rowAt:ip] != RowResetDeck) return;
     UIAlertController *a = [UIAlertController alertControllerWithTitle:@"Restaurar atalhos?"
         message:@"Todos os botões voltam ao padrão. Os botões que você criou serão apagados."

@@ -13,11 +13,11 @@
 - (BOOL)application:(UIApplication *)app didFinishLaunchingWithOptions:(NSDictionary *)opts {
     PDRegisterDefaults();
     [[UINavigationBar appearance] setBarStyle:UIBarStyleBlack];
-    [[UINavigationBar appearance] setTintColor:PDColorAccent()];
+    [[UINavigationBar appearance] setTintColor:PDColorBlue()];
 
     self.window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-    self.window.tintColor = PDColorAccent();
-    self.window.backgroundColor = PDColorBackground();
+    self.window.tintColor = PDColorBlue();
+    self.window.backgroundColor = PDColorDarkBackground();
     self.window.rootViewController = [[PDConnectViewController alloc] init];
     [self.window makeKeyAndVisible];
     return YES;

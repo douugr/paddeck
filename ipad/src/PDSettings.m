@@ -14,6 +14,7 @@ void PDRegisterDefaults(void) {
         PDPrefKeyboardOnTop: @NO,
         PDPrefScrollStrip: @YES,
         PDPrefScrollStripLeft: @NO,
+        PDPrefTheme: @"dark",
         PDPrefPins: @{},
     }];
 }

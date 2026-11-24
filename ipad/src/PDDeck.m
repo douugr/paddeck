@@ -183,7 +183,7 @@ static NSDictionary *Slot(NSString *title, PDActionType type, NSString *value, N
 
         _dash = [CAShapeLayer layer];
         _dash.fillColor = [UIColor clearColor].CGColor;
-        _dash.strokeColor = [UIColor colorWithWhite:1 alpha:0.18].CGColor;
+        _dash.strokeColor = PDColorText(0.22).CGColor;
         _dash.lineWidth = 2;
         _dash.lineDashPattern = @[@8, @6];
         [self.layer addSublayer:_dash];
@@ -212,7 +212,7 @@ static NSDictionary *Slot(NSString *title, PDActionType type, NSString *value, N
     if (empty) {
         self.baseColor = [UIColor clearColor];
         _title.text = @"+";
-        _title.textColor = [UIColor colorWithWhite:1 alpha:0.25];
+        _title.textColor = PDColorText(0.3);
         _subtitle.text = @"";
     } else {
         NSArray *colors = PDDeckColors();
@@ -249,6 +249,8 @@ static NSDictionary *Slot(NSString *title, PDActionType type, NSString *value, N
         _pager = [[UIPageControl alloc] init];
         _pager.numberOfPages = PDDeckPages;
         _pager.userInteractionEnabled = NO;
+        _pager.pageIndicatorTintColor = PDColorText(0.25);
+        _pager.currentPageIndicatorTintColor = PDColorText(0.8);
         [self addSubview:_pager];
 
         NSMutableArray *buttons = [NSMutableArray array];

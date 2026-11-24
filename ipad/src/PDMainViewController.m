@@ -25,7 +25,7 @@
         _autocorrectionType = UITextAutocorrectionTypeNo;
         _autocapitalizationType = UITextAutocapitalizationTypeNone;
         _spellCheckingType = UITextSpellCheckingTypeNo;
-        _keyboardAppearance = UIKeyboardAppearanceDark;
+        _keyboardAppearance = PDThemeIsLight() ? UIKeyboardAppearanceLight : UIKeyboardAppearanceDark;
     }
     return self;
 }
@@ -77,7 +77,7 @@
     [self.bar addSubview:self.dot];
 
     self.statusLabel = [[UILabel alloc] init];
-    self.statusLabel.textColor = [UIColor colorWithWhite:1 alpha:0.75];
+    self.statusLabel.textColor = PDColorText(0.75);
     self.statusLabel.font = [UIFont systemFontOfSize:15];
     [self.bar addSubview:self.statusLabel];
 
@@ -187,6 +187,14 @@
     PDSettingsViewController *s = [[PDSettingsViewController alloc] init];
     __weak PDMainViewController *weakSelf = self;
     s.onClose = ^{
+        if (PDThemeReload()) {
+            // New color profile: swap this screen for a freshly built one (the connection stays).
+            UIViewController *presenter = weakSelf.presentingViewController;
+            [presenter dismissViewControllerAnimated:NO completion:^{
+                [presenter presentViewController:[[PDMainViewController alloc] init] animated:NO completion:nil];
+            }];
+            return;
+        }
         [weakSelf applyKeepAwake];
         [weakSelf.view setNeedsLayout];
         [weakSelf.deck reload];

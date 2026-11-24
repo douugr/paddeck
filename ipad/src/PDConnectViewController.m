@@ -25,7 +25,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.view.backgroundColor = PDColorBackground();
+    self.view.backgroundColor = PDColorDarkBackground();
     self.services = [NSMutableArray array];
 
     UILabel *title = [[UILabel alloc] init];
@@ -50,7 +50,7 @@
     self.table = [[UITableView alloc] initWithFrame:CGRectMake((self.view.bounds.size.width - w) / 2, 200, w, 330)
                                               style:UITableViewStylePlain];
     self.table.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin;
-    self.table.backgroundColor = PDColorSurface();
+    self.table.backgroundColor = PDColorDarkSurface();
     self.table.separatorColor = [UIColor colorWithWhite:1 alpha:0.08];
     self.table.layer.cornerRadius = 14;
     self.table.rowHeight = 64;
@@ -279,7 +279,7 @@
         cell.textLabel.font = PDFont(20, PDWeightMedium);
         cell.detailTextLabel.textColor = [UIColor colorWithWhite:1 alpha:0.45];
         UIView *sel = [[UIView alloc] init];
-        sel.backgroundColor = PDColorSurfaceActive();
+        sel.backgroundColor = PDColorDarkSurfaceActive();
         cell.selectedBackgroundView = sel;
     }
     NSNetService *s = self.services[(NSUInteger)ip.row];

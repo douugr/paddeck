@@ -59,7 +59,7 @@ static const NSTimeInterval kDragWindow = 0.22;  // delay before a single tap cl
 
         _hint = [[UILabel alloc] init];
         _hint.text = @"Trackpad";
-        _hint.textColor = [UIColor colorWithWhite:1 alpha:0.12];
+        _hint.textColor = PDColorText(PDThemeIsLight() ? 0.2 : 0.12);
         _hint.font = PDFont(28, PDWeightLight);
         _hint.textAlignment = NSTextAlignmentCenter;
         [_surface addSubview:_hint];
@@ -68,13 +68,13 @@ static const NSTimeInterval kDragWindow = 0.22;  // delay before a single tap cl
         _rightButton = [self makeButton:@"Clique direito" tag:1];
 
         _strip = [[UIView alloc] init];
-        _strip.backgroundColor = PDColorKeyDark();
+        _strip.backgroundColor = PDColorSurfaceActive();
         _strip.layer.cornerRadius = 12;
         _strip.userInteractionEnabled = NO;
         _stripGrip = [[UILabel alloc] init];
         _stripGrip.numberOfLines = 3;
         _stripGrip.text = @"\u25B2\n\u2261\n\u25BC";   // ▲ ≡ ▼
-        _stripGrip.textColor = [UIColor colorWithWhite:1 alpha:0.25];
+        _stripGrip.textColor = PDColorText(0.3);
         _stripGrip.font = PDFont(13, PDWeightMedium);
         _stripGrip.textAlignment = NSTextAlignmentCenter;
         [_strip addSubview:_stripGrip];
@@ -106,7 +106,7 @@ static const NSTimeInterval kDragWindow = 0.22;  // delay before a single tap cl
     UIButton *b = [UIButton buttonWithType:UIButtonTypeCustom];
     b.tag = tag;
     [b setTitle:title forState:UIControlStateNormal];
-    [b setTitleColor:[UIColor colorWithWhite:1 alpha:0.6] forState:UIControlStateNormal];
+    [b setTitleColor:PDColorText(0.65) forState:UIControlStateNormal];
     b.titleLabel.font = PDFont(15, PDWeightMedium);
     b.backgroundColor = PDColorSurface();
     b.layer.cornerRadius = 12;
@@ -187,7 +187,7 @@ static const NSTimeInterval kDragWindow = 0.22;  // delay before a single tap cl
             if (!_scrollSamples) _scrollSamples = [NSMutableArray array];
             [_scrollSamples removeAllObjects];
             _scrollRemX = _scrollRemY = 0;
-            _strip.backgroundColor = PDColorKeyActive();
+            _strip.backgroundColor = PDColorText(PDThemeIsLight() ? 0.16 : 0.14);
             return;
         }
     }
@@ -349,7 +349,7 @@ static const NSTimeInterval kDragWindow = 0.22;  // delay before a single tap cl
     if (_stripTouch) {
         if (![touches containsObject:_stripTouch]) return;
         _stripTouch = nil;
-        _strip.backgroundColor = PDColorKeyDark();
+        _strip.backgroundColor = PDColorSurfaceActive();
         if (!cancelled && _inertia) [self startMomentum];
         return;
     }

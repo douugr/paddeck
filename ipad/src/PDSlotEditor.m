@@ -35,7 +35,7 @@
 
 - (UITextField *)field:(CGFloat)y placeholder:(NSString *)ph {
     UITextField *f = [[UITextField alloc] initWithFrame:CGRectMake(24, y, 492, 44)];
-    f.backgroundColor = PDColorSurface();
+    f.backgroundColor = PDColorDarkSurface();
     f.textColor = [UIColor whiteColor];
     f.layer.cornerRadius = 8;
     f.leftView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 12, 44)];
@@ -51,7 +51,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.view.backgroundColor = PDColorBar();
+    self.view.backgroundColor = PDColorDarkBar();
     self.title = [PDDeck typeOf:self.slot] == PDActionNone ? @"Novo botão" : @"Editar botão";
     self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Cancelar"
         style:UIBarButtonItemStylePlain target:self action:@selector(cancel)];
@@ -67,7 +67,7 @@
     [self caption:@"AÇÃO" y:y];
     self.typeControl = [[UISegmentedControl alloc] initWithItems:@[@"Atalho", @"Texto", @"Abrir app", @"Mídia"]];
     self.typeControl.frame = CGRectMake(24, y + 24, 492, 36);
-    self.typeControl.tintColor = PDColorAccent();
+    self.typeControl.tintColor = PDColorBlue();
     NSInteger t = [self.slot[PDSlotType] integerValue];
     self.typeControl.selectedSegmentIndex = (self.slot[PDSlotType] && t >= 0) ? t : 0;
     [self.typeControl addTarget:self action:@selector(typeChanged) forControlEvents:UIControlEventValueChanged];
@@ -82,7 +82,7 @@
 
     self.mediaControl = [[UISegmentedControl alloc] initWithItems:[PDKeys mediaLabels]];
     self.mediaControl.frame = CGRectMake(24, y + 28, 492, 36);
-    self.mediaControl.tintColor = PDColorAccent();
+    self.mediaControl.tintColor = PDColorBlue();
     [self.mediaControl setTitleTextAttributes:@{ NSFontAttributeName: [UIFont systemFontOfSize:12] }
                                      forState:UIControlStateNormal];
     [self.view addSubview:self.mediaControl];
@@ -121,16 +121,16 @@
     UIButton *test = [UIButton buttonWithType:UIButtonTypeSystem];
     test.frame = CGRectMake(24, y, 236, 48);
     [test setTitle:@"Testar no Mac" forState:UIControlStateNormal];
-    test.backgroundColor = PDColorSurface();
+    test.backgroundColor = PDColorDarkSurface();
     test.layer.cornerRadius = 10;
-    test.tintColor = PDColorAccent();
+    test.tintColor = PDColorBlue();
     [test addTarget:self action:@selector(test) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:test];
 
     UIButton *del = [UIButton buttonWithType:UIButtonTypeSystem];
     del.frame = CGRectMake(280, y, 236, 48);
     [del setTitle:@"Apagar botão" forState:UIControlStateNormal];
-    del.backgroundColor = PDColorSurface();
+    del.backgroundColor = PDColorDarkSurface();
     del.layer.cornerRadius = 10;
     del.tintColor = PDColorOff();
     [del addTarget:self action:@selector(remove) forControlEvents:UIControlEventTouchUpInside];

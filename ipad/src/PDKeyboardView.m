@@ -49,7 +49,7 @@ static const CGFloat kUnitsPerRow = 11;
 
         _label = [[UILabel alloc] init];
         _label.textAlignment = NSTextAlignmentCenter;
-        _label.textColor = [UIColor whiteColor];
+        _label.textColor = PDColorKeyText(1);
         _label.adjustsFontSizeToFitWidth = YES;
         _label.minimumScaleFactor = 0.5;
         _label.text = spec[K_LABEL];
@@ -58,7 +58,7 @@ static const CGFloat kUnitsPerRow = 11;
         if (spec[K_SLABEL]) {
             _shiftLabel = [[UILabel alloc] init];
             _shiftLabel.text = spec[K_SLABEL];
-            _shiftLabel.textColor = [UIColor colorWithWhite:1 alpha:0.45];
+            _shiftLabel.textColor = PDColorKeyText(0.45);
             _shiftLabel.font = [UIFont systemFontOfSize:15];
             [self addSubview:_shiftLabel];
         }
@@ -94,6 +94,8 @@ static const CGFloat kUnitsPerRow = 11;
     if (self.modState > 0) bg = PDColorAccent();
     if (self.pressed) bg = PDColorKeyActive();
     self.backgroundColor = bg;
+    // Modifier keys turn the accent color: white text reads on it in every profile.
+    self.label.textColor = self.modState > 0 && !self.pressed ? [UIColor whiteColor] : PDColorKeyText(1);
     self.lockBar.hidden = self.modState != 2;
     NSString *label = self.label.text ?: @"";
     if (!special && label.length <= 2) self.label.font = [UIFont systemFontOfSize:28];
@@ -329,7 +331,7 @@ static NSDictionary *Layers(void) {
 
         _preview = [[UILabel alloc] init];
         _preview.backgroundColor = PDColorKeyActive();
-        _preview.textColor = [UIColor whiteColor];
+        _preview.textColor = PDColorKeyText(1);
         _preview.textAlignment = NSTextAlignmentCenter;
         _preview.font = [UIFont systemFontOfSize:40];
         _preview.layer.cornerRadius = 12;
@@ -611,13 +613,13 @@ static NSDictionary *Layers(void) {
     box.backgroundColor = PDColorKeyDark();
     box.layer.cornerRadius = 12;
     box.layer.borderWidth = 1;
-    box.layer.borderColor = [UIColor colorWithWhite:1 alpha:0.15].CGColor;
+    box.layer.borderColor = PDColorKeyText(0.15).CGColor;
     box.userInteractionEnabled = NO;
     NSMutableArray *labels = [NSMutableArray array];
     for (NSUInteger i = 0; i < variants.count; i++) {
         UILabel *l = [[UILabel alloc] initWithFrame:CGRectMake(i * cellW + 3, 3, cellW - 6, h - 6)];
         l.text = shift ? [variants[i] uppercaseString] : variants[i];
-        l.textColor = [UIColor whiteColor];
+        l.textColor = PDColorKeyText(1);
         l.font = [UIFont systemFontOfSize:32];
         l.textAlignment = NSTextAlignmentCenter;
         l.layer.cornerRadius = 9;
@@ -636,7 +638,9 @@ static NSDictionary *Layers(void) {
 - (void)highlightVariant:(NSInteger)i {
     _variantIndex = i;
     for (NSUInteger j = 0; j < _variantLabels.count; j++) {
-        ((UILabel *)_variantLabels[j]).backgroundColor = (NSInteger)j == i ? PDColorAccent() : [UIColor clearColor];
+        UILabel *l = _variantLabels[j];
+        l.backgroundColor = (NSInteger)j == i ? PDColorAccent() : [UIColor clearColor];
+        l.textColor = (NSInteger)j == i ? [UIColor whiteColor] : PDColorKeyText(1);
     }
 }
 
