@@ -194,7 +194,7 @@ final class KeyView: UIView {
         layer.cornerCurve = .continuous
 
         label.textAlignment = .center
-        label.textColor = .white
+        label.textColor = Theme.keyText
         label.adjustsFontSizeToFitWidth = true
         label.minimumScaleFactor = 0.5
         label.text = spec.label
@@ -203,13 +203,13 @@ final class KeyView: UIView {
         if let s = spec.shiftLabel {
             let l = UILabel()
             l.text = s
-            l.textColor = UIColor(white: 1, alpha: 0.45)
+            l.textColor = Theme.keyText.withAlphaComponent(0.45)
             addSubview(l)
             shiftLabel = l
         }
         if let m = spec.media {
             icon.image = UIImage(systemName: m.symbol)
-            icon.tintColor = .white
+            icon.tintColor = Theme.keyText
             icon.contentMode = .scaleAspectFit
             addSubview(icon)
         }
@@ -246,6 +246,10 @@ final class KeyView: UIView {
         if modState > 0 { bg = Theme.accent }
         if pressed { bg = Theme.keyActive }
         backgroundColor = bg
+        // Modifier keys turn the accent color: white text reads on it in every profile.
+        let fg = modState > 0 && !pressed ? UIColor.white : Theme.keyText
+        label.textColor = fg
+        icon.tintColor = fg
         lockBar.isHidden = modState != 2
         let text = label.text ?? ""
         let base = min(bounds.height, bounds.width * 1.3)
@@ -301,7 +305,7 @@ final class KeyboardView: UIView {
         isMultipleTouchEnabled = true
         clipsToBounds = false
         preview.backgroundColor = Theme.keyActive
-        preview.textColor = .white
+        preview.textColor = Theme.keyText
         preview.textAlignment = .center
         preview.layer.cornerRadius = 12
         preview.layer.masksToBounds = true
@@ -561,12 +565,12 @@ final class KeyboardView: UIView {
         box.backgroundColor = Theme.keyDark
         box.layer.cornerRadius = 12
         box.layer.borderWidth = 1
-        box.layer.borderColor = UIColor(white: 1, alpha: 0.15).cgColor
+        box.layer.borderColor = Theme.keyText.withAlphaComponent(0.15).cgColor
         box.isUserInteractionEnabled = false
         variantLabels = list.enumerated().map { i, v in
             let l = UILabel(frame: CGRect(x: CGFloat(i) * cellW + 3, y: 3, width: cellW - 6, height: h - 6))
             l.text = shift ? v.uppercased() : v
-            l.textColor = .white
+            l.textColor = Theme.keyText
             l.font = .systemFont(ofSize: min(32, h * 0.45))
             l.textAlignment = .center
             l.layer.cornerRadius = 9
@@ -583,7 +587,10 @@ final class KeyboardView: UIView {
 
     private func highlightVariant(_ i: Int) {
         variantIndex = i
-        for (j, l) in variantLabels.enumerated() { l.backgroundColor = j == i ? Theme.accent : .clear }
+        for (j, l) in variantLabels.enumerated() {
+            l.backgroundColor = j == i ? Theme.accent : .clear
+            l.textColor = j == i ? .white : Theme.keyText
+        }
     }
 
     private func cancelHold() {

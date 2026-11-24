@@ -12,6 +12,7 @@
 #define PDPrefInertialScroll @"inertialScroll"  // bool: momentum scrolling
 #define PDPrefScrollStrip    @"scrollStrip"     // bool: one-finger scroll strip on the trackpad edge
 #define PDPrefScrollStripLeft @"scrollStripLeft" // bool: strip on the left edge
+#define PDPrefTheme          @"theme"           // string: color profile id (PDTheme.m)
 #define PDPrefKeyClick       @"keyClick"        // bool: click sound on keys
 #define PDPrefLastHost       @"lastHost"        // string (IP)
 #define PDPrefLastName       @"lastName"        // string (Mac name)

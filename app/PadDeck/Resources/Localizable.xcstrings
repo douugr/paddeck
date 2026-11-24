@@ -78,6 +78,39 @@
         }
       }
     },
+    "Appearance": {
+      "extractionState": "manual",
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aparência"
+          }
+        }
+      }
+    },
+    "Blue": {
+      "extractionState": "manual",
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Azul"
+          }
+        }
+      }
+    },
+    "Blush": {
+      "extractionState": "manual",
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blush"
+          }
+        }
+      }
+    },
     "Brightness +": {
       "extractionState": "manual",
       "localizations": {
@@ -122,6 +155,17 @@
         }
       }
     },
+    "Citrus": {
+      "extractionState": "manual",
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cítrico"
+          }
+        }
+      }
+    },
     "Click": {
       "extractionState": "manual",
       "localizations": {
@@ -151,6 +195,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cor"
+          }
+        }
+      }
+    },
+    "Colors": {
+      "extractionState": "manual",
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cores"
           }
         }
       }
@@ -239,6 +294,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Não foi possível conectar"
+          }
+        }
+      }
+    },
+    "Dark": {
+      "extractionState": "manual",
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escuro"
           }
         }
       }
@@ -386,6 +452,17 @@
         }
       }
     },
+    "Green": {
+      "extractionState": "manual",
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verde"
+          }
+        }
+      }
+    },
     "Hide app": {
       "extractionState": "manual",
       "localizations": {
@@ -393,6 +470,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Esconder app"
+          }
+        }
+      }
+    },
+    "Indigo": {
+      "extractionState": "manual",
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Índigo"
           }
         }
       }
@@ -496,6 +584,17 @@
         }
       }
     },
+    "Match PadDeck to the color of your Mac.": {
+      "extractionState": "manual",
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deixe o PadDeck com a cor do seu Mac."
+          }
+        }
+      }
+    },
     "Media": {
       "extractionState": "manual",
       "localizations": {
@@ -503,6 +602,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mídia"
+          }
+        }
+      }
+    },
+    "Midnight": {
+      "extractionState": "manual",
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meia-noite"
           }
         }
       }
@@ -650,6 +760,17 @@
         }
       }
     },
+    "Orange": {
+      "extractionState": "manual",
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laranja"
+          }
+        }
+      }
+    },
     "PIN for %@": {
       "extractionState": "manual",
       "localizations": {
@@ -705,6 +826,17 @@
         }
       }
     },
+    "Pink": {
+      "extractionState": "manual",
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rosa"
+          }
+        }
+      }
+    },
     "Play": {
       "extractionState": "manual",
       "localizations": {
@@ -745,6 +877,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Anterior"
+          }
+        }
+      }
+    },
+    "Purple": {
+      "extractionState": "manual",
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Roxo"
           }
         }
       }
@@ -958,6 +1101,28 @@
         }
       }
     },
+    "Silver": {
+      "extractionState": "manual",
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prateado"
+          }
+        }
+      }
+    },
+    "Sky Blue": {
+      "extractionState": "manual",
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Azul-céu"
+          }
+        }
+      }
+    },
     "Source code (MIT)": {
       "extractionState": "manual",
       "localizations": {
@@ -976,6 +1141,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Espaço"
+          }
+        }
+      }
+    },
+    "Space Black": {
+      "extractionState": "manual",
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preto-espacial"
+          }
+        }
+      }
+    },
+    "Space Gray": {
+      "extractionState": "manual",
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cinza-espacial"
+          }
+        }
+      }
+    },
+    "Starlight": {
+      "extractionState": "manual",
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estelar"
           }
         }
       }
@@ -1123,6 +1321,17 @@
         }
       }
     },
+    "The new colors are applied when you close Settings.": {
+      "extractionState": "manual",
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As novas cores são aplicadas quando você fecha os Ajustes."
+          }
+        }
+      }
+    },
     "To edit a button, touch and hold it on the Shortcuts screen.": {
       "extractionState": "manual",
       "localizations": {
@@ -1240,6 +1449,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "PIN incorreto. Confira no menu do PadDeck no Mac."
+          }
+        }
+      }
+    },
+    "Yellow": {
+      "extractionState": "manual",
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Amarelo"
           }
         }
       }

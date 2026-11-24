@@ -54,12 +54,12 @@ final class TrackpadView: UIView {
         addSubview(surface)
 
         hint.text = String(localized: "Trackpad")
-        hint.textColor = UIColor(white: 1, alpha: 0.12)
+        hint.textColor = Theme.text(Theme.isLight ? 0.2 : 0.12)
         hint.font = .systemFont(ofSize: 28, weight: .light)
         hint.textAlignment = .center
         surface.addSubview(hint)
 
-        strip.backgroundColor = Theme.keyDark
+        strip.backgroundColor = Theme.surfaceActive
         strip.layer.cornerRadius = 12
         strip.layer.cornerCurve = .continuous
         strip.isUserInteractionEnabled = false
@@ -69,7 +69,7 @@ final class TrackpadView: UIView {
         let cfg = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
         for name in ["chevron.up", "line.3.horizontal", "chevron.down"] {
             let iv = UIImageView(image: UIImage(systemName: name, withConfiguration: cfg))
-            iv.tintColor = UIColor(white: 1, alpha: 0.25)
+            iv.tintColor = Theme.text(0.3)
             stripGrip.addArrangedSubview(iv)
         }
         strip.addSubview(stripGrip)
@@ -92,7 +92,7 @@ final class TrackpadView: UIView {
     private func setup(_ b: UIButton, title: String, tag: Int) {
         b.tag = tag
         b.setTitle(title, for: .normal)
-        b.setTitleColor(UIColor(white: 1, alpha: 0.6), for: .normal)
+        b.setTitleColor(Theme.text(0.65), for: .normal)
         b.titleLabel?.font = .systemFont(ofSize: 15, weight: .medium)
         b.backgroundColor = Theme.surface
         b.layer.cornerRadius = 12
@@ -176,7 +176,7 @@ final class TrackpadView: UIView {
                 stripTouch = t
                 scrollSamples.removeAll()
                 scrollRem = .zero
-                strip.backgroundColor = Theme.keyActive
+                strip.backgroundColor = Theme.text(Theme.isLight ? 0.16 : 0.14)
                 return
             }
         }
@@ -322,7 +322,7 @@ final class TrackpadView: UIView {
         if let t = stripTouch {
             guard ended.contains(t) else { return }
             stripTouch = nil
-            strip.backgroundColor = Theme.keyDark
+            strip.backgroundColor = Theme.surfaceActive
             if !cancelled && inertia { startMomentum() }
             return
         }

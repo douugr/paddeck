@@ -36,6 +36,7 @@ struct ConnectView: View {
                 } footer: {
                     Text("Open PadDeck on the Mac: the PIN is in the keyboard icon in the menu bar. With a USB cable, it connects by itself, no PIN needed.")
                 }
+                .themedRows()
 
                 if let status = statusText {
                     Section {
@@ -44,6 +45,7 @@ struct ConnectView: View {
                             Text(status)
                         }
                     }
+                    .themedRows()
                 }
 
                 Section {
@@ -53,8 +55,10 @@ struct ConnectView: View {
                 } footer: {
                     Text("Free, for macOS 12 or later.")
                 }
+                .themedRows()
             }
             .navigationTitle("PadDeck")
+            .themedList()
         }
         .onAppear(perform: appear)
         .onDisappear { browser.stop() }
@@ -83,7 +87,6 @@ struct ConnectView: View {
         } message: {
             Text("The Mac's address on the network (System Settings › Wi-Fi › Details).")
         }
-        .preferredColorScheme(.dark)
     }
 
     private func row(_ name: String) -> some View {

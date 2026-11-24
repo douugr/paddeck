@@ -19,6 +19,7 @@ enum Prefs {
             "inertialScroll": true,
             "scrollStrip": true,
             "scrollStripLeft": false,
+            "theme": "dark",
         ])
     }
 
@@ -34,6 +35,7 @@ enum Prefs {
     static var inertialScroll: Bool { get { d.bool(forKey: "inertialScroll") } set { d.set(newValue, forKey: "inertialScroll") } }
     static var scrollStrip: Bool { get { d.bool(forKey: "scrollStrip") } set { d.set(newValue, forKey: "scrollStrip") } }
     static var scrollStripLeft: Bool { get { d.bool(forKey: "scrollStripLeft") } set { d.set(newValue, forKey: "scrollStripLeft") } }
+    static var theme: String { get { d.string(forKey: "theme") ?? "dark" } set { d.set(newValue, forKey: "theme") } }
     static var keyHaptics: Bool { get { d.bool(forKey: "keyHaptics") } set { d.set(newValue, forKey: "keyHaptics") } }
 
     /// Last Mac connected to: Bonjour name and/or IP.

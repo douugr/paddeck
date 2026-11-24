@@ -18,9 +18,8 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options: UIScene.ConnectionOptions) {
         guard let ws = scene as? UIWindowScene else { return }
         let w = UIWindow(windowScene: ws)
-        w.overrideUserInterfaceStyle = .dark
-        w.tintColor = Theme.accent
         w.rootViewController = RootViewController()
+        RootViewController.style(w)
         w.makeKeyAndVisible()
         window = w
     }
@@ -42,10 +41,26 @@ final class RootViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = Theme.background
         show(UIHostingController(rootView: ConnectView()), animated: false)
+        NotificationCenter.default.addObserver(self, selector: #selector(themeChanged),
+                                               name: Theme.changed, object: nil)
         Connection.shared.$state
             .receive(on: RunLoop.main)
             .sink { [weak self] state in self?.update(state) }
             .store(in: &subs)
+    }
+
+    /// Light or dark system UI (sheets, alerts, segmented controls) and the tint follow the profile.
+    static func style(_ w: UIWindow?) {
+        w?.overrideUserInterfaceStyle = Theme.isLight ? .light : .dark
+        w?.tintColor = Theme.accent
+    }
+
+    @objc private func themeChanged() {
+        RootViewController.style(view.window)
+        view.backgroundColor = Theme.background
+        // The UIKit views read their colors when built: swap in a fresh main screen.
+        if current is MainViewController { show(MainViewController(), animated: true) }
+        setNeedsStatusBarAppearanceUpdate()
     }
 
     private func update(_ state: Connection.State) {

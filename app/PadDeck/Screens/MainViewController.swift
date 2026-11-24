@@ -10,7 +10,7 @@ final class TextSink: UIView, UIKeyInput {
     var smartQuotesType: UITextSmartQuotesType = .no
     var smartDashesType: UITextSmartDashesType = .no
     var smartInsertDeleteType: UITextSmartInsertDeleteType = .no
-    var keyboardAppearance: UIKeyboardAppearance = .dark
+    var keyboardAppearance: UIKeyboardAppearance = Theme.isLight ? .light : .dark
 
     override var canBecomeFirstResponder: Bool { true }
     var hasText: Bool { true }   // keeps backspace working
@@ -33,7 +33,7 @@ final class MainViewController: UIViewController {
     private let sink = TextSink()
     private var subs = Set<AnyCancellable>()
 
-    override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
+    override var preferredStatusBarStyle: UIStatusBarStyle { Theme.isLight ? .darkContent : .lightContent }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -43,7 +43,7 @@ final class MainViewController: UIViewController {
         view.addSubview(bar)
         dot.layer.cornerRadius = 5
         bar.addSubview(dot)
-        statusLabel.textColor = UIColor(white: 1, alpha: 0.75)
+        statusLabel.textColor = Theme.text(0.75)
         statusLabel.font = .systemFont(ofSize: 15)
         bar.addSubview(statusLabel)
 
@@ -195,6 +195,8 @@ final class MainViewController: UIViewController {
             UIApplication.shared.isIdleTimerDisabled = Prefs.keepAwake
             self?.deck.reload()
             self?.view.setNeedsLayout()
+            // A new color profile rebuilds the screen (RootViewController listens for this).
+            if Theme.reload() { NotificationCenter.default.post(name: Theme.changed, object: nil) }
         })
         host.modalPresentationStyle = .formSheet
         present(host, animated: true)
