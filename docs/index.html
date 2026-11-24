@@ -1,35 +1,90 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PadDeck</title><link rel="icon" href="icon-512.png"><style>
-:root{color-scheme:light dark;--bg:#f5f5f7;--card:#fff;--text:#1d1d1f;--muted:#6e6e73;--accent:#0a64d6}
-@media (prefers-color-scheme:dark){:root{--bg:#121214;--card:#1c1c1f;--text:#f5f5f7;--muted:#98989d;--accent:#4aa3ff}}
-*{box-sizing:border-box}body{margin:0;font:17px/1.55 -apple-system,BlinkMacSystemFont,"Helvetica Neue",Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
-.wrap{max-width:760px;margin:0 auto;padding:32px 20px 64px}
-header{display:flex;align-items:center;gap:16px;margin-bottom:28px}header img{width:72px;height:72px;border-radius:16px}
-h1{font-size:30px;margin:0}h2{font-size:21px;margin:28px 0 8px}.sub{color:var(--muted);margin:2px 0 0}
-.card{background:var(--card);border-radius:16px;padding:20px 24px;margin:0 0 16px}
+<title>PadDeck — Keyboard, trackpad and shortcuts for your Mac</title>
+<meta name="description" content="Turn your iPhone or iPad into a wireless keyboard, trackpad and shortcut deck for your Mac. Free Mac app, over Wi-Fi or a USB cable.">
+<meta property="og:title" content="PadDeck — Keyboard, trackpad and shortcuts for your Mac">
+<meta property="og:description" content="Turn your iPhone or iPad into a wireless keyboard, trackpad and shortcut deck for your Mac. Free Mac app, over Wi-Fi or a USB cable.">
+<meta property="og:image" content="https://douugr.github.io/paddeck/img/ipad-main-en.jpg">
+<link rel="icon" href="icon-512.png"><link rel="apple-touch-icon" href="icon-512.png">
+<link rel="alternate" hreflang="en" href="https://douugr.github.io/paddeck/">
+<link rel="alternate" hreflang="pt-BR" href="https://douugr.github.io/paddeck/pt/">
+<style>
+:root{color-scheme:light dark;--bg:#f5f5f7;--card:#fff;--text:#1d1d1f;--muted:#6e6e73;--accent:#0a64d6;--line:rgba(0,0,0,.08)}
+@media (prefers-color-scheme:dark){:root{--bg:#0e0e10;--card:#1c1c1f;--text:#f5f5f7;--muted:#98989d;--accent:#4aa3ff;--line:rgba(255,255,255,.1)}}
+*{box-sizing:border-box}
+body{margin:0;font:17px/1.55 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
 a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
-ul{padding-left:22px}li{margin:4px 0}.muted{color:var(--muted);font-size:15px}
-nav{display:flex;gap:18px;flex-wrap:wrap;margin:-12px 0 24px;font-size:15px}
-.btn{display:inline-block;background:var(--accent);color:#fff;border-radius:10px;padding:10px 18px;font-weight:600}
-.btn:hover{text-decoration:none;opacity:.9}footer{margin-top:40px}
+.wrap{max-width:1040px;margin:0 auto;padding:0 24px}
+.top{display:flex;align-items:center;gap:12px;padding:18px 0}
+.top img{width:34px;height:34px;border-radius:8px}.top b{font-size:19px;margin-right:auto}
+.top nav{display:flex;gap:20px;font-size:15px}.top nav a{color:var(--muted)}.top nav a:hover{color:var(--text);text-decoration:none}
+.hero{text-align:center;padding:48px 0 8px}
+.hero img.icon{width:112px;height:112px;border-radius:25px;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.hero h1{font-size:clamp(32px,5.2vw,54px);line-height:1.08;letter-spacing:-.02em;margin:26px auto 16px;max-width:860px}
+.hero p.lead{font-size:clamp(18px,2.2vw,22px);color:var(--muted);max-width:720px;margin:0 auto}
+.cta{margin:30px 0 8px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:10px;background:var(--accent);color:#fff;border-radius:980px;padding:14px 28px;font-size:18px;font-weight:600}
+.btn:hover{text-decoration:none;filter:brightness(1.08)}.btn svg{width:20px;height:20px;fill:currentColor}
+.meta{color:var(--muted);font-size:14px}
+.soon{display:inline-block;margin-top:14px;font-size:15px;color:var(--muted);border:1px solid var(--line);border-radius:980px;padding:6px 14px}
+.devices{position:relative;max-width:980px;margin:48px auto 0;padding-bottom:40px}
+.devices .ipad{width:84%;height:auto;border-radius:22px;border:10px solid #1d1d1f;box-shadow:0 30px 60px rgba(0,0,0,.25);display:block}
+.devices .iphone{position:absolute;right:0;bottom:0;width:22%;height:auto;border-radius:30px;border:7px solid #1d1d1f;box-shadow:0 24px 50px rgba(0,0,0,.35)}
+section{padding:64px 0 8px}
+h2{font-size:clamp(28px,3.6vw,40px);letter-spacing:-.015em;line-height:1.12;text-align:center;margin:0 0 12px}
+.sub{color:var(--muted);text-align:center;max-width:680px;margin:0 auto 32px;font-size:19px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.card{background:var(--card);border-radius:20px;padding:24px 26px}
+.card h3{margin:0 0 6px;font-size:19px}.card p{margin:0;color:var(--muted);font-size:16px}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:14px}
+.sw{background:var(--card);border-radius:16px;padding:12px;text-align:center;font-size:14px}
+.sw .mini{height:64px;border-radius:10px;padding:7px;display:flex;flex-direction:column;gap:5px;margin-bottom:8px;border:1px solid var(--line)}
+.sw .pad{flex:1;border-radius:5px}.sw .keys{display:flex;gap:3px;height:14px}.sw .keys i{flex:1;border-radius:3px}
+.sw small{display:block;color:var(--muted);font-size:12px}
+.steps{counter-reset:s;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.steps .card{position:relative;padding-top:58px}
+.steps .card:before{counter-increment:s;content:counter(s);position:absolute;top:20px;left:26px;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center}
+.legacy{display:flex;gap:24px;align-items:center;flex-wrap:wrap}.legacy div{flex:1;min-width:260px}
+.legacy code{background:var(--bg);border-radius:8px;padding:3px 8px;font-size:15px}
+.btn2{display:inline-block;border:1px solid var(--accent);color:var(--accent);border-radius:980px;padding:10px 20px;font-weight:600}
+.btn2:hover{text-decoration:none;background:var(--accent);color:#fff}
+.end{text-align:center;padding:72px 0 24px}
+footer{color:var(--muted);font-size:13px;text-align:center;padding:32px 0 48px;border-top:1px solid var(--line);margin-top:40px}
+@media (max-width:640px){.top nav{gap:14px;font-size:14px}.devices .ipad{width:100%;border-width:6px;border-radius:14px}.devices .iphone{width:30%;right:-4px;bottom:-10px;border-width:5px;border-radius:20px}.devices{padding-bottom:0}}
 </style></head>
-<body><div class="wrap">
-<header><img src="icon-512.png" alt=""><div><h1>PadDeck</h1><p class="sub">Keyboard, trackpad and shortcut deck for your Mac</p></div></header>
-<nav><a href="./">Home</a><a href="support.html">Support</a><a href="privacy.html">Privacy</a><a href="pt/">Português</a></nav>
+<body>
+<div class="wrap">
+<header class="top"><img src="icon-512.png" alt=""><b>PadDeck</b>
+<nav><a href="support.html">Support</a><a href="privacy.html">Privacy</a><a href="pt/" hreflang="pt-BR">Português</a></nav></header>
 
-<div class="card"><p>PadDeck turns your iPhone or iPad into a wireless keyboard, trackpad and shortcut panel for your Mac. It works over Wi-Fi or a USB cable.</p>
-<ul>
-<li><b>Trackpad</b>: tap to click, two-finger right click and scroll with momentum, double-tap and drag, three-finger swipes for Mission Control and Spaces.</li>
-<li><b>Keyboard</b>: Mac layout with ⌘ ⌥ ⌃ ⇧, F-keys, arrows and media keys; hold a letter for accents. Works with any Mac keyboard layout.</li>
-<li><b>Shortcuts</b>: 45 buttons for shortcuts, text, apps, websites and media keys.</li>
-</ul></div>
-<div class="card"><h2 style="margin-top:0">Get started</h2>
-<ol><li>Download <b>PadDeck for Mac</b> (free, macOS 12 or later) and open it. A keyboard icon appears in the menu bar.</li>
-<li>Allow PadDeck in <b>System Settings › Privacy &amp; Security › Accessibility</b>, so it can move the pointer and type.</li>
-<li>Open PadDeck on your iPhone or iPad, pick your Mac and enter the PIN shown in the menu bar. With a USB cable it connects by itself.</li></ol>
-<p><a class="btn" href="https://github.com/douugr/paddeck/releases/latest">Download PadDeck for Mac</a></p></div>
+<div class="hero">
+<img class="icon" src="icon-512.png" alt="">
+<h1>Your iPhone and iPad, now a keyboard, trackpad and shortcut deck for your Mac.</h1>
+<p class="lead">Control your Mac from the couch, run a presentation, or keep a row of one-tap shortcuts next to your keyboard. Over Wi-Fi or a USB cable.</p>
+<div class="cta"><a class="btn" href="https://github.com/douugr/paddeck/releases/latest/download/PadDeck-mac.zip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a1 1 0 0 1 1 1v9.6l3.3-3.3a1 1 0 1 1 1.4 1.4l-5 5a1 1 0 0 1-1.4 0l-5-5a1 1 0 1 1 1.4-1.4l3.3 3.3V4a1 1 0 0 1 1-1zM5 19h14a1 1 0 1 1 0 2H5a1 1 0 1 1 0-2z"/></svg>Download for Mac</a>
+<span class="meta">Free · macOS 12 or later · Apple silicon and Intel · <a href="https://github.com/douugr/paddeck/releases/latest">All versions</a></span></div>
+<span class="soon">The iPhone and iPad app is coming soon to the App Store.</span>
+</div>
 
-<footer class="muted">© 2026 Douglas Rodrigues Neto · <a href="https://github.com/douugr/paddeck">github.com/douugr/paddeck</a></footer>
-</div></body></html>
+<div class="devices">
+<img class="ipad" src="img/ipad-main-en.jpg" alt="PadDeck on iPad: trackpad with a full Mac keyboard" width="1600" height="1200">
+<img class="iphone" src="img/iphone-deck-en.jpg" alt="PadDeck on iPhone: shortcut deck" width="560" height="1218" loading="lazy">
+</div>
+
+<section><h2>Everything a Mac trackpad and keyboard do</h2><div class="grid" style="margin-top:28px"><div class="card"><h3>Trackpad</h3><p>Tap to click, two-finger right click and scrolling with momentum, double-tap and drag, three-finger swipes for Mission Control and Spaces.</p></div><div class="card"><h3>Scroll strip</h3><p>Slide one finger along the edge to scroll, handy when you hold the iPhone in one hand.</p></div><div class="card"><h3>Mac keyboard</h3><p>⌘ ⌥ ⌃ ⇧, esc, F1–F12, arrows and media keys. Hold a letter for accents. Works with any Mac keyboard layout.</p></div><div class="card"><h3>Shortcut deck</h3><p>45 buttons in the style of a Stream Deck: keyboard shortcuts, text snippets, apps, websites and media keys.</p></div><div class="card"><h3>Wi-Fi or cable</h3><p>Finds your Mac by itself and pairs with a 4-digit PIN. Plug in a USB cable for the lowest latency, no PIN needed.</p></div><div class="card"><h3>Private</h3><p>Talks only to your own Mac. No accounts, no ads, no tracking, no data collected.</p></div></div></section>
+
+<section><h2>Match your Mac</h2><p class="sub">Pick the color of your MacBook Neo, Air, Pro or iMac, and PadDeck takes on the same finish: trackpad, keys and accent.</p><div class="swatches"><div class="sw" role="img" aria-label="MacBook Neo Silver"><div class="mini" style="background:#D0D1D5"><div class="pad" style="background:#D0D1D5;filter:brightness(.97)"></div><div class="keys"><i style=background:#F7F7F9></i><i style=background:#F7F7F9></i><i style=background:#F7F7F9></i><i style=background:#F7F7F9></i><i style=background:#0A6FE0></i></div></div>Silver<small>MacBook Neo</small></div><div class="sw" role="img" aria-label="MacBook Neo Blush"><div class="mini" style="background:#E5CEC9"><div class="pad" style="background:#E5CEC9;filter:brightness(.97)"></div><div class="keys"><i style=background:#FBF1EF></i><i style=background:#FBF1EF></i><i style=background:#FBF1EF></i><i style=background:#FBF1EF></i><i style=background:#C25B73></i></div></div>Blush<small>MacBook Neo</small></div><div class="sw" role="img" aria-label="MacBook Neo Citrus"><div class="mini" style="background:#DDE1A8"><div class="pad" style="background:#DDE1A8;filter:brightness(.97)"></div><div class="keys"><i style=background:#F8F9E3></i><i style=background:#F8F9E3></i><i style=background:#F8F9E3></i><i style=background:#F8F9E3></i><i style=background:#6F7F0A></i></div></div>Citrus<small>MacBook Neo</small></div><div class="sw" role="img" aria-label="MacBook Neo Indigo"><div class="mini" style="background:#2F355E"><div class="pad" style="background:#2F355E;filter:brightness(.97)"></div><div class="keys"><i style=background:#434A80></i><i style=background:#434A80></i><i style=background:#434A80></i><i style=background:#434A80></i><i style=background:#93A5FF></i></div></div>Indigo<small>MacBook Neo</small></div><div class="sw" role="img" aria-label="MacBook Air Sky Blue"><div class="mini" style="background:#C5D4E0"><div class="pad" style="background:#C5D4E0;filter:brightness(.97)"></div><div class="keys"><i style=background:#1C1C1E></i><i style=background:#1C1C1E></i><i style=background:#1C1C1E></i><i style=background:#1C1C1E></i><i style=background:#2F7DC0></i></div></div>Sky Blue<small>MacBook Air</small></div><div class="sw" role="img" aria-label="MacBook Air Starlight"><div class="mini" style="background:#DDD4C5"><div class="pad" style="background:#DDD4C5;filter:brightness(.97)"></div><div class="keys"><i style=background:#1C1C1E></i><i style=background:#1C1C1E></i><i style=background:#1C1C1E></i><i style=background:#1C1C1E></i><i style=background:#9A733C></i></div></div>Starlight<small>MacBook Air</small></div><div class="sw" role="img" aria-label="MacBook Air Midnight"><div class="mini" style="background:#272D3C"><div class="pad" style="background:#272D3C;filter:brightness(.97)"></div><div class="keys"><i style=background:#343B50></i><i style=background:#343B50></i><i style=background:#343B50></i><i style=background:#343B50></i><i style=background:#5E9CFF></i></div></div>Midnight<small>MacBook Air</small></div><div class="sw" role="img" aria-label="MacBook Pro Space Black"><div class="mini" style="background:#1E1F21"><div class="pad" style="background:#1E1F21;filter:brightness(.97)"></div><div class="keys"><i style=background:#303134></i><i style=background:#303134></i><i style=background:#303134></i><i style=background:#303134></i><i style=background:#0A84FF></i></div></div>Space Black<small>MacBook Pro</small></div><div class="sw" role="img" aria-label="iMac Blue"><div class="mini" style="background:#CADDEF"><div class="pad" style="background:#CADDEF;filter:brightness(.97)"></div><div class="keys"><i style=background:#FFFFFF></i><i style=background:#FFFFFF></i><i style=background:#FFFFFF></i><i style=background:#FFFFFF></i><i style=background:#2D6BB4></i></div></div>Blue<small>iMac</small></div><div class="sw" role="img" aria-label="iMac Purple"><div class="mini" style="background:#DDD4EE"><div class="pad" style="background:#DDD4EE;filter:brightness(.97)"></div><div class="keys"><i style=background:#FFFFFF></i><i style=background:#FFFFFF></i><i style=background:#FFFFFF></i><i style=background:#FFFFFF></i><i style=background:#7653B5></i></div></div>Purple<small>iMac</small></div><div class="sw" role="img" aria-label="iMac Pink"><div class="mini" style="background:#F2D5D8"><div class="pad" style="background:#F2D5D8;filter:brightness(.97)"></div><div class="keys"><i style=background:#FFFFFF></i><i style=background:#FFFFFF></i><i style=background:#FFFFFF></i><i style=background:#FFFFFF></i><i style=background:#CF4A6B></i></div></div>Pink<small>iMac</small></div><div class="sw" role="img" aria-label="iMac Orange"><div class="mini" style="background:#F6D7C2"><div class="pad" style="background:#F6D7C2;filter:brightness(.97)"></div><div class="keys"><i style=background:#FFFFFF></i><i style=background:#FFFFFF></i><i style=background:#FFFFFF></i><i style=background:#FFFFFF></i><i style=background:#DC6427></i></div></div>Orange<small>iMac</small></div><div class="sw" role="img" aria-label="iMac Yellow"><div class="mini" style="background:#F4E6B6"><div class="pad" style="background:#F4E6B6;filter:brightness(.97)"></div><div class="keys"><i style=background:#FFFFFF></i><i style=background:#FFFFFF></i><i style=background:#FFFFFF></i><i style=background:#FFFFFF></i><i style=background:#C9970E></i></div></div>Yellow<small>iMac</small></div><div class="sw" role="img" aria-label="iMac Green"><div class="mini" style="background:#D0E7D0"><div class="pad" style="background:#D0E7D0;filter:brightness(.97)"></div><div class="keys"><i style=background:#FFFFFF></i><i style=background:#FFFFFF></i><i style=background:#FFFFFF></i><i style=background:#FFFFFF></i><i style=background:#3A8A4B></i></div></div>Green<small>iMac</small></div></div></section>
+
+<section><h2>Set up in a minute</h2><div class="steps" style="margin-top:28px"><div class="card"><h3>Install PadDeck for Mac</h3><p>Download it, move it to Applications and open it. A keyboard icon appears in the menu bar.</p></div><div class="card"><h3>Allow Accessibility</h3><p>In System Settings › Privacy &amp; Security › Accessibility, turn PadDeck on so it can move the pointer and type.</p></div><div class="card"><h3>Connect</h3><p>Open PadDeck on your iPhone or iPad, pick your Mac and enter the PIN shown in the menu bar. With a USB cable it connects by itself.</p></div></div>
+<div class="cta"><a class="btn" href="https://github.com/douugr/paddeck/releases/latest/download/PadDeck-mac.zip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a1 1 0 0 1 1 1v9.6l3.3-3.3a1 1 0 1 1 1.4 1.4l-5 5a1 1 0 0 1-1.4 0l-5-5a1 1 0 1 1 1.4-1.4l3.3 3.3V4a1 1 0 0 1 1-1zM5 19h14a1 1 0 1 1 0 2H5a1 1 0 1 1 0-2z"/></svg>Download for Mac</a></div></section>
+
+<section><h2>Safe to open</h2><div class="grid" style="margin-top:28px"><div class="card"><h3>Notarized by Apple</h3><p>Signed with a Developer ID and checked by Apple: macOS opens it with just the usual confirmation for apps downloaded from the internet.</p></div><div class="card"><h3>Open source</h3><p>The Mac app and the protocol are on GitHub under the MIT license.</p></div><div class="card"><h3>Tiny and quiet</h3><p>A menu bar app of about 200 KB. It only listens while it&#x27;s open, and you choose whether it starts at login.</p></div></div></section>
+
+<section><div class="card legacy"><div><h3>Got an old jailbroken iPad?</h3><p>PadDeck also runs on iPads with iOS 8 to 10 (tested on an iPad 3). Add the repo below in Cydia and search for PadDeck. <code>douugr.github.io/repo</code></p></div>
+<a class="btn2" href="https://douugr.github.io/repo/">Open the Cydia repo</a></div></section>
+
+<p class="end meta">Questions? See the <a href="support.html">support page</a> or <a href="https://github.com/douugr/paddeck/issues">open an issue on GitHub</a>.</p>
+<footer>© 2026 Douglas Rodrigues Neto · <a href="https://github.com/douugr/paddeck">github.com/douugr/paddeck</a><br>Mac, MacBook, iMac, iPhone and iPad are trademarks of Apple Inc. PadDeck is not affiliated with Apple.</footer>
+</div>
+</body></html>
