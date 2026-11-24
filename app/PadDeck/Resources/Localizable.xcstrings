@@ -529,13 +529,13 @@
         }
       }
     },
-    "Momentum scrolling: swipe two fingers quickly and let go to keep the page scrolling; touch the trackpad to stop.\n\nDouble-tap and drag: tap once, then touch again and drag to hold the click. With it on, a single click waits a moment.": {
+    "Momentum scrolling: swipe two fingers quickly and let go to keep the page scrolling; touch the trackpad to stop.\n\nScroll strip: slide one finger along the edge of the trackpad to scroll.\n\nDouble-tap and drag: tap once, then touch again and drag to hold the click. With it on, a single click waits a moment.": {
       "extractionState": "manual",
       "localizations": {
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rolagem com inércia: deslize dois dedos rápido e solte para a página continuar rolando; encoste no trackpad para parar.\n\nToque duplo e arraste: toque uma vez e, logo em seguida, encoste e arraste para segurar o clique. Com ele ligado, o clique simples espera um instante."
+            "value": "Rolagem com inércia: deslize dois dedos rápido e solte para a página continuar rolando; encoste no trackpad para parar.\n\nFaixa de rolagem: deslize um dedo pela borda do trackpad para rolar.\n\nToque duplo e arraste: toque uma vez e, logo em seguida, encoste e arraste para segurar o clique. Com ele ligado, o clique simples espera um instante."
           }
         }
       }
@@ -870,6 +870,17 @@
         }
       }
     },
+    "Scroll strip": {
+      "extractionState": "manual",
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faixa de rolagem"
+          }
+        }
+      }
+    },
     "Sends %@": {
       "extractionState": "manual",
       "localizations": {
@@ -965,6 +976,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Espaço"
+          }
+        }
+      }
+    },
+    "Strip on the left": {
+      "extractionState": "manual",
+      "localizations": {
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faixa do lado esquerdo"
           }
         }
       }
