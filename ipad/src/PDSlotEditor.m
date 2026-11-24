@@ -27,7 +27,7 @@
 - (UILabel *)caption:(NSString *)text y:(CGFloat)y {
     UILabel *l = [[UILabel alloc] initWithFrame:CGRectMake(24, y, 400, 20)];
     l.text = text;
-    l.textColor = [UIColor colorWithWhite:1 alpha:0.55];
+    l.textColor = PDColorText(0.55);
     l.font = PDFont(13, PDWeightMedium);
     [self.view addSubview:l];
     return l;
@@ -35,15 +35,15 @@
 
 - (UITextField *)field:(CGFloat)y placeholder:(NSString *)ph {
     UITextField *f = [[UITextField alloc] initWithFrame:CGRectMake(24, y, 492, 44)];
-    f.backgroundColor = PDColorDarkSurface();
-    f.textColor = [UIColor whiteColor];
+    f.backgroundColor = PDColorSurface();
+    f.textColor = PDColorText(1);
     f.layer.cornerRadius = 8;
     f.leftView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 12, 44)];
     f.leftViewMode = UITextFieldViewModeAlways;
     f.attributedPlaceholder = [[NSAttributedString alloc] initWithString:ph attributes:@{
-        NSForegroundColorAttributeName: [UIColor colorWithWhite:1 alpha:0.3] }];
+        NSForegroundColorAttributeName: PDColorText(0.3) }];
     f.clearButtonMode = UITextFieldViewModeWhileEditing;
-    f.keyboardAppearance = UIKeyboardAppearanceDark;
+    f.keyboardAppearance = PDThemeIsLight() ? UIKeyboardAppearanceLight : UIKeyboardAppearanceDark;
     f.delegate = self;
     [self.view addSubview:f];
     return f;
@@ -51,7 +51,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.view.backgroundColor = PDColorDarkBar();
+    self.view.backgroundColor = PDColorBar();
     self.title = [PDDeck typeOf:self.slot] == PDActionNone ? @"Novo botão" : @"Editar botão";
     self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Cancelar"
         style:UIBarButtonItemStylePlain target:self action:@selector(cancel)];
@@ -67,7 +67,7 @@
     [self caption:@"AÇÃO" y:y];
     self.typeControl = [[UISegmentedControl alloc] initWithItems:@[@"Atalho", @"Texto", @"Abrir app", @"Mídia"]];
     self.typeControl.frame = CGRectMake(24, y + 24, 492, 36);
-    self.typeControl.tintColor = PDColorBlue();
+    self.typeControl.tintColor = PDColorAccent();
     NSInteger t = [self.slot[PDSlotType] integerValue];
     self.typeControl.selectedSegmentIndex = (self.slot[PDSlotType] && t >= 0) ? t : 0;
     [self.typeControl addTarget:self action:@selector(typeChanged) forControlEvents:UIControlEventValueChanged];
@@ -82,7 +82,7 @@
 
     self.mediaControl = [[UISegmentedControl alloc] initWithItems:[PDKeys mediaLabels]];
     self.mediaControl.frame = CGRectMake(24, y + 28, 492, 36);
-    self.mediaControl.tintColor = PDColorBlue();
+    self.mediaControl.tintColor = PDColorAccent();
     [self.mediaControl setTitleTextAttributes:@{ NSFontAttributeName: [UIFont systemFontOfSize:12] }
                                      forState:UIControlStateNormal];
     [self.view addSubview:self.mediaControl];
@@ -121,16 +121,16 @@
     UIButton *test = [UIButton buttonWithType:UIButtonTypeSystem];
     test.frame = CGRectMake(24, y, 236, 48);
     [test setTitle:@"Testar no Mac" forState:UIControlStateNormal];
-    test.backgroundColor = PDColorDarkSurface();
+    test.backgroundColor = PDColorSurface();
     test.layer.cornerRadius = 10;
-    test.tintColor = PDColorBlue();
+    test.tintColor = PDColorAccent();
     [test addTarget:self action:@selector(test) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:test];
 
     UIButton *del = [UIButton buttonWithType:UIButtonTypeSystem];
     del.frame = CGRectMake(280, y, 236, 48);
     [del setTitle:@"Apagar botão" forState:UIControlStateNormal];
-    del.backgroundColor = PDColorDarkSurface();
+    del.backgroundColor = PDColorSurface();
     del.layer.cornerRadius = 10;
     del.tintColor = PDColorOff();
     [del addTarget:self action:@selector(remove) forControlEvents:UIControlEventTouchUpInside];
@@ -147,14 +147,14 @@
     self.mediaControl.hidden = !media;
     NSArray *ph = @[@"cmd+shift+4", @"Texto que será digitado", @"Safari, com.apple.Music ou https://…", @""];
     self.valueField.attributedPlaceholder = [[NSAttributedString alloc] initWithString:ph[t] attributes:@{
-        NSForegroundColorAttributeName: [UIColor colorWithWhite:1 alpha:0.3] }];
+        NSForegroundColorAttributeName: PDColorText(0.3) }];
     [self validate];
 }
 
 - (BOOL)validate {
     PDActionType t = (PDActionType)self.typeControl.selectedSegmentIndex;
     NSString *v = self.valueField.text ?: @"";
-    UIColor *ok = [UIColor colorWithWhite:1 alpha:0.45];
+    UIColor *ok = PDColorText(0.45);
     switch (t) {
         case PDActionShortcut: {
             if (v.length == 0) {
@@ -197,7 +197,7 @@
     for (UIButton *b in self.colorButtons) {
         BOOL sel = b.tag == self.colorIndex;
         b.layer.borderWidth = sel ? 3 : 0;
-        b.layer.borderColor = [UIColor whiteColor].CGColor;
+        b.layer.borderColor = PDColorText(1).CGColor;
     }
 }
 

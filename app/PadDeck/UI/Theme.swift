@@ -1,4 +1,5 @@
 import UIKit
+import SwiftUI
 
 /// A color profile. Most of them match a Mac finish, so the iPhone/iPad looks like part of it:
 /// the trackpad takes the color of the Mac's trackpad, the keys match its keyboard.
@@ -141,14 +142,14 @@ enum Theme {
                        text: 0x2E2F33, accent: 0x0A6FE0),
         lightBlackKeys("air-starlight", "Starlight", .air, bg: 0xEFE9DF, bar: 0xE6DED1, surface: 0xDDD4C5, active: 0xD1C6B5,
                        text: 0x3D372E, accent: 0x9A733C),
-        dark("air-midnight", "Midnight", .air, bg: 0x1A1E28, bar: 0x222734, surface: 0x2C3241, active: 0x353C4E,
-             key: 0x13161F, keyDark: 0x0E1018, keyActive: 0x3D4456, accent: 0x5E9CFF),
-        dark("air-spacegray", "Space Gray", .air, bg: 0x3A3B3F, bar: 0x444549, surface: 0x54555A, active: 0x5E5F64,
-             key: 0x1B1B1D, keyDark: 0x242426, keyActive: 0x48484C, accent: 0x0A84FF),
+        dark("air-midnight", "Midnight", .air, bg: 0x141822, bar: 0x1D2230, surface: 0x272D3C, active: 0x313849,
+             key: 0x343B50, keyDark: 0x292F41, keyActive: 0x4E5770, accent: 0x5E9CFF),
+        dark("air-spacegray", "Space Gray", .air, bg: 0x2E2F33, bar: 0x38393D, surface: 0x45464B, active: 0x4F5055,
+             key: 0x18181A, keyDark: 0x222224, keyActive: 0x5A5B60, accent: 0x0A84FF),
 
         // MacBook Pro
-        dark("pro-spaceblack", "Space Black", .pro, bg: 0x0D0E0F, bar: 0x161719, surface: 0x212225, active: 0x2A2B2F,
-             key: 0x0F1011, keyDark: 0x090A0A, keyActive: 0x38393D, accent: 0x0A84FF),
+        dark("pro-spaceblack", "Space Black", .pro, bg: 0x0A0A0B, bar: 0x141415, surface: 0x1E1F21, active: 0x27282B,
+             key: 0x303134, keyDark: 0x242527, keyActive: 0x4B4C50, accent: 0x0A84FF),
         lightBlackKeys("pro-silver", "Silver", .pro, bg: 0xE3E4E7, bar: 0xD7D8DC, surface: 0xCFD0D4, active: 0xC2C3C8,
                        text: 0x2E2F33, accent: 0x0A6FE0),
 
@@ -161,4 +162,24 @@ enum Theme {
         imac("imac-green", "Green", front: 0xD0E7D0, back: 0x3A8A4B, bg: 0xE1F0E1, bar: 0xD8EBD8, active: 0xBCD9BD, text: 0x1F4A27),
         imac("imac-silver", "Silver", front: 0xE5E6E9, back: 0x6B6E75, bg: 0xEEEFF1, bar: 0xE7E8EB, active: 0xD0D1D6, text: 0x2E2F33),
     ]
+}
+
+// MARK: - SwiftUI screens (Settings, connect, shortcut editor)
+
+extension View {
+    /// Background, bars, text, tint and light/dark style of a List or Form in the given profile.
+    func themedList(_ p: Palette = Theme.current) -> some View {
+        self.scrollContentBackground(.hidden)
+            .background(Color(p.background).ignoresSafeArea())
+            .foregroundStyle(Color(p.text))
+            .tint(Color(p.accent))
+            .toolbarBackground(Color(p.bar), for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .preferredColorScheme(p.light ? .light : .dark)
+    }
+
+    /// Row background for a Section, in the given profile.
+    func themedRows(_ p: Palette = Theme.current) -> some View {
+        listRowBackground(Color(p.surface))
+    }
 }

@@ -25,6 +25,9 @@ struct SettingsView: View {
         return "\(v) (\(b))"
     }
 
+    /// Follows the picker right away, so Settings previews the profile while it is open.
+    private var palette: Palette { Theme.palette(id: theme) }
+
     private var themeLabel: String {
         let p = Theme.palette(id: theme)
         return p.line == .paddeck ? p.localizedName : "\(p.line.rawValue) · \(p.localizedName)"
@@ -53,6 +56,7 @@ struct SettingsView: View {
                 } footer: {
                     Text("Momentum scrolling: swipe two fingers quickly and let go to keep the page scrolling; touch the trackpad to stop.\n\nScroll strip: slide one finger along the edge of the trackpad to scroll.\n\nDouble-tap and drag: tap once, then touch again and drag to hold the click. With it on, a single click waits a moment.")
                 }
+                .themedRows(palette)
 
                 Section {
                     NavigationLink {
@@ -71,31 +75,37 @@ struct SettingsView: View {
                 } footer: {
                     Text("Match PadDeck to the color of your Mac.")
                 }
+                .themedRows(palette)
 
                 Section("Keyboard") {
                     Toggle("Keyboard above the trackpad", isOn: $keyboardOnTop)
                     Toggle("Key click sound", isOn: $keyClick)
                     if isPhone { Toggle("Key haptics", isOn: $keyHaptics) }
                 }
+                .themedRows(palette)
 
                 Section("General") {
                     Toggle("Keep the screen on", isOn: $keepAwake)
                 }
+                .themedRows(palette)
 
                 Section {
                     Button("Restore default shortcuts", role: .destructive) { confirmReset = true }
                 } footer: {
                     Text("To edit a button, touch and hold it on the Shortcuts screen.")
                 }
+                .themedRows(palette)
 
                 Section("About") {
                     LabeledContent("Version", value: version)
                     Link("PadDeck for Mac", destination: URL(string: "https://github.com/douugr/paddeck/releases/latest")!)
                     Link("Source code (MIT)", destination: URL(string: "https://github.com/douugr/paddeck")!)
                 }
+                .themedRows(palette)
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
+            .themedList(palette)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) { Button("OK", action: onDone) }
             }
@@ -106,6 +116,5 @@ struct SettingsView: View {
                 Text("All buttons go back to the defaults. Buttons you created will be deleted.")
             }
         }
-        .preferredColorScheme(Theme.isLight ? .light : .dark)
     }
 }

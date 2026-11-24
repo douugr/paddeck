@@ -63,6 +63,7 @@ struct SlotEditorView: View {
                 Section("Name") {
                     TextField("E.g. Screenshot", text: $title)
                 }
+                .themedRows()
                 Section {
                     Picker("Action", selection: $action) {
                         ForEach(Slot.Action.allCases) { Text($0.label).tag($0) }
@@ -82,6 +83,7 @@ struct SlotEditorView: View {
                 } footer: {
                     Text(hint.0).foregroundStyle(hint.1)
                 }
+                .themedRows()
                 Section("Color") {
                     HStack(spacing: 14) {
                         ForEach(Theme.deckColors.indices, id: \.self) { i in
@@ -95,6 +97,7 @@ struct SlotEditorView: View {
                     }
                     .padding(.vertical, 4)
                 }
+                .themedRows()
                 Section {
                     Button("Try on the Mac") { current.perform() }
                         .disabled(!current.isValid)
@@ -102,9 +105,11 @@ struct SlotEditorView: View {
                         Button("Delete button", role: .destructive) { onDone(.delete) }
                     }
                 }
+                .themedRows()
             }
             .navigationTitle(isNew ? String(localized: "New button") : String(localized: "Edit button"))
             .navigationBarTitleDisplayMode(.inline)
+            .themedList()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { onDone(.cancel) } }
                 ToolbarItem(placement: .confirmationAction) {
@@ -112,6 +117,5 @@ struct SlotEditorView: View {
                 }
             }
         }
-        .preferredColorScheme(Theme.isLight ? .light : .dark)
     }
 }

@@ -186,8 +186,9 @@
 - (void)openSettings {
     PDSettingsViewController *s = [[PDSettingsViewController alloc] init];
     __weak PDMainViewController *weakSelf = self;
+    const PDPalette *before = PDCurrentPalette();   // the color list may change it
     s.onClose = ^{
-        if (PDThemeReload()) {
+        if (PDCurrentPalette() != before) {
             // New color profile: swap this screen for a freshly built one (the connection stays).
             UIViewController *presenter = weakSelf.presentingViewController;
             [presenter dismissViewControllerAnimated:NO completion:^{
@@ -201,6 +202,7 @@
     };
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:s];
     nav.modalPresentationStyle = UIModalPresentationFormSheet;
+    PDStyleNavigationBar(nav.navigationBar);
     [self presentViewController:nav animated:YES completion:nil];
 }
 
@@ -255,6 +257,7 @@
     };
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:e];
     nav.modalPresentationStyle = UIModalPresentationFormSheet;
+    PDStyleNavigationBar(nav.navigationBar);
     [self presentViewController:nav animated:YES completion:nil];
 }
 

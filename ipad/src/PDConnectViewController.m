@@ -16,6 +16,8 @@
 @property (nonatomic, strong) UILabel *statusLabel;
 @property (nonatomic, strong) UIActivityIndicatorView *spinner;
 @property (nonatomic, strong) UIButton *manualButton;
+@property (nonatomic, strong) UILabel *titleLabel, *subLabel, *helpLabel;
+@property (nonatomic) const PDPalette *palette;   // profile the colors were applied with
 @property (nonatomic, copy) NSString *pendingHost;
 @property (nonatomic, copy) NSString *pendingName;
 @property (nonatomic) BOOL triedAuto;
@@ -25,33 +27,35 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.view.backgroundColor = PDColorDarkBackground();
+    self.view.backgroundColor = PDColorBackground();
     self.services = [NSMutableArray array];
 
     UILabel *title = [[UILabel alloc] init];
     title.text = @"PadDeck";
-    title.textColor = [UIColor whiteColor];
+    title.textColor = PDColorText(1);
     title.font = PDFont(44, PDWeightBold);
     title.textAlignment = NSTextAlignmentCenter;
     title.frame = CGRectMake(0, 70, self.view.bounds.size.width, 54);
     title.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     [self.view addSubview:title];
+    self.titleLabel = title;
 
     UILabel *sub = [[UILabel alloc] init];
     sub.text = @"Teclado, trackpad e atalhos para o seu Mac";
-    sub.textColor = [UIColor colorWithWhite:1 alpha:0.5];
+    sub.textColor = PDColorText(0.5);
     sub.font = [UIFont systemFontOfSize:18];
     sub.textAlignment = NSTextAlignmentCenter;
     sub.frame = CGRectMake(0, 126, self.view.bounds.size.width, 26);
     sub.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     [self.view addSubview:sub];
+    self.subLabel = sub;
 
     CGFloat w = 520;
     self.table = [[UITableView alloc] initWithFrame:CGRectMake((self.view.bounds.size.width - w) / 2, 200, w, 330)
                                               style:UITableViewStylePlain];
     self.table.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin;
-    self.table.backgroundColor = PDColorDarkSurface();
-    self.table.separatorColor = [UIColor colorWithWhite:1 alpha:0.08];
+    self.table.backgroundColor = PDColorSurface();
+    self.table.separatorColor = PDColorText(0.08);
     self.table.layer.cornerRadius = 14;
     self.table.rowHeight = 64;
     self.table.dataSource = self;
@@ -67,7 +71,7 @@
 
     self.statusLabel = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMinX(self.table.frame) + 30, 544, w - 30, 28)];
     self.statusLabel.autoresizingMask = self.table.autoresizingMask;
-    self.statusLabel.textColor = [UIColor colorWithWhite:1 alpha:0.6];
+    self.statusLabel.textColor = PDColorText(0.6);
     self.statusLabel.font = [UIFont systemFontOfSize:15];
     [self.view addSubview:self.statusLabel];
 
@@ -82,14 +86,38 @@
     UILabel *help = [[UILabel alloc] initWithFrame:CGRectMake(0, self.view.bounds.size.height - 60, self.view.bounds.size.width, 40)];
     help.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
     help.text = @"Abra o PadDeck no Mac (o PIN aparece no menu dele). Pelo cabo USB, conecta sozinho, sem PIN.";
-    help.textColor = [UIColor colorWithWhite:1 alpha:0.35];
+    help.textColor = PDColorText(0.35);
     help.font = [UIFont systemFontOfSize:14];
     help.textAlignment = NSTextAlignmentCenter;
     [self.view addSubview:help];
+    self.helpLabel = help;
 
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(connectionChanged)
                                                  name:PDConnectionChangedNotification object:nil];
     [self updateStatus];
+    [self applyTheme];
+}
+
+/// Colors of the current profile; called again when coming back from the main screen.
+- (void)applyTheme {
+    if (self.palette == PDCurrentPalette()) return;
+    self.palette = PDCurrentPalette();
+    self.view.backgroundColor = PDColorBackground();
+    self.titleLabel.textColor = PDColorText(1);
+    self.subLabel.textColor = PDColorText(0.5);
+    self.helpLabel.textColor = PDColorText(0.45);
+    self.statusLabel.textColor = PDColorText(0.6);
+    self.table.backgroundColor = PDColorSurface();
+    self.table.separatorColor = PDColorText(0.08);
+    self.spinner.activityIndicatorViewStyle = PDThemeIsLight() ? UIActivityIndicatorViewStyleGray
+                                                               : UIActivityIndicatorViewStyleWhite;
+    self.manualButton.tintColor = PDColorAccent();
+    [self.table reloadData];
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    [self applyTheme];
 }
 
 - (void)dealloc {
@@ -275,13 +303,12 @@
     if (!cell) {
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"mac"];
         cell.backgroundColor = [UIColor clearColor];
-        cell.textLabel.textColor = [UIColor whiteColor];
         cell.textLabel.font = PDFont(20, PDWeightMedium);
-        cell.detailTextLabel.textColor = [UIColor colorWithWhite:1 alpha:0.45];
-        UIView *sel = [[UIView alloc] init];
-        sel.backgroundColor = PDColorDarkSurfaceActive();
-        cell.selectedBackgroundView = sel;
+        cell.selectedBackgroundView = [[UIView alloc] init];
     }
+    cell.textLabel.textColor = PDColorText(1);
+    cell.detailTextLabel.textColor = PDColorText(0.45);
+    cell.selectedBackgroundView.backgroundColor = PDColorSurfaceActive();
     NSNetService *s = self.services[(NSUInteger)ip.row];
     cell.textLabel.text = s.name;
     NSDictionary *pins = [[NSUserDefaults standardUserDefaults] dictionaryForKey:PDPrefPins];

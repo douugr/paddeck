@@ -19,7 +19,7 @@ static inline UIFont *PDFont(CGFloat size, CGFloat weight) {
 }
 
 /// Color profile in use (Ajustes › Cores). Most match a Mac finish: MacBook Neo, Air, Pro, iMac.
-/// The main screen reads it when built; settings, connect and editor screens stay dark.
+/// Screens read it when built; the main screen is rebuilt when it changes.
 typedef struct {
     const char *ident;   // stored in NSUserDefaults (PDPrefTheme)
     const char *line;    // "PadDeck", "MacBook Neo", "MacBook Air", "MacBook Pro", "iMac"
@@ -47,12 +47,13 @@ static inline UIColor *PDColorKeyText(CGFloat a)  { return [PDRGB(PDCurrentPalet
 static inline UIColor *PDColorText(CGFloat a)     { return [PDRGB(PDCurrentPalette()->text) colorWithAlphaComponent:a]; }
 static inline BOOL PDThemeIsLight(void)           { return PDCurrentPalette()->light; }
 
-/// Fixed dark colors for the screens that do not follow the profile.
-static inline UIColor *PDColorDarkBackground(void) { return PDRGB(0x121214); }
-static inline UIColor *PDColorDarkBar(void)        { return PDRGB(0x1C1C1F); }
-static inline UIColor *PDColorDarkSurface(void)    { return PDRGB(0x26262A); }
-static inline UIColor *PDColorDarkSurfaceActive(void) { return PDRGB(0x2E2E33); }
-static inline UIColor *PDColorBlue(void)           { return PDRGB(0x0A84FF); }
+/// Navigation bars of the Settings / editor sheets in the current profile.
+static inline void PDStyleNavigationBar(UINavigationBar *b) {
+    b.barStyle = PDThemeIsLight() ? UIBarStyleDefault : UIBarStyleBlack;
+    b.barTintColor = PDColorBar();
+    b.tintColor = PDColorAccent();
+    b.titleTextAttributes = @{ NSForegroundColorAttributeName: PDColorText(1) };
+}
 static inline UIColor *PDColorOK(void)            { return PDRGB(0x30D158); }
 static inline UIColor *PDColorWarn(void)          { return PDRGB(0xFF9F0A); }
 static inline UIColor *PDColorOff(void)           { return PDRGB(0xFF453A); }

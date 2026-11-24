@@ -3,6 +3,7 @@ import SwiftUI
 /// Color profiles grouped by Mac line, each with a small preview of the trackpad and keys.
 struct ThemePickerView: View {
     @AppStorage("theme") private var theme = "dark"
+    private var palette: Palette { Theme.palette(id: theme) }
 
     var body: some View {
         List {
@@ -10,9 +11,10 @@ struct ThemePickerView: View {
                 Section(line.rawValue) {
                     ForEach(Theme.all.filter { $0.line == line }) { p in
                         Button { theme = p.id } label: { row(p) }
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(Color(palette.text))
                     }
                 }
+                .themedRows(palette)
             }
             Section {
             } footer: {
@@ -21,6 +23,7 @@ struct ThemePickerView: View {
         }
         .navigationTitle("Appearance")
         .navigationBarTitleDisplayMode(.inline)
+        .themedList(palette)
     }
 
     private func row(_ p: Palette) -> some View {

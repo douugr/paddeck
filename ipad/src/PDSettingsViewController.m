@@ -59,8 +59,8 @@ static UIImage *PDPaletteSwatch(const PDPalette *p) {
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.title = @"Cores";
-    self.tableView.backgroundColor = PDColorDarkBar();
-    self.tableView.separatorColor = [UIColor colorWithWhite:1 alpha:0.08];
+    self.tableView.backgroundColor = PDColorBar();
+    self.tableView.separatorColor = PDColorText(0.08);
     self.tableView.rowHeight = 56;
 }
 
@@ -74,25 +74,31 @@ static UIImage *PDPaletteSwatch(const PDPalette *p) {
 
 - (void)tableView:(UITableView *)tv willDisplayHeaderView:(UIView *)view forSection:(NSInteger)s {
     if ([view isKindOfClass:[UITableViewHeaderFooterView class]])
-        ((UITableViewHeaderFooterView *)view).textLabel.textColor = [UIColor colorWithWhite:1 alpha:0.5];
+        ((UITableViewHeaderFooterView *)view).textLabel.textColor = PDColorText(0.5);
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tv cellForRowAtIndexPath:(NSIndexPath *)ip {
     const PDPalette *p = [self paletteAt:ip];
     UITableViewCell *c = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
-    c.backgroundColor = PDColorDarkSurface();
-    c.textLabel.textColor = [UIColor whiteColor];
+    c.backgroundColor = PDColorSurface();
+    c.textLabel.textColor = PDColorText(1);
     c.textLabel.text = [NSString stringWithUTF8String:p->name];
     c.imageView.image = PDPaletteSwatch(p);
     NSString *cur = [[NSUserDefaults standardUserDefaults] stringForKey:PDPrefTheme] ?: @"dark";
     c.accessoryType = strcmp(p->ident, cur.UTF8String) == 0 ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
-    c.tintColor = PDColorBlue();
+    c.tintColor = PDColorAccent();
     return c;
 }
 
 - (void)tableView:(UITableView *)tv didSelectRowAtIndexPath:(NSIndexPath *)ip {
     [[NSUserDefaults standardUserDefaults] setObject:[NSString stringWithUTF8String:[self paletteAt:ip]->ident]
                                               forKey:PDPrefTheme];
+    // Preview right away: this list and Ajustes take the new colors; the main screen
+    // is rebuilt when Ajustes closes.
+    PDThemeReload();
+    PDStyleNavigationBar(self.navigationController.navigationBar);
+    self.tableView.backgroundColor = PDColorBar();
+    self.tableView.separatorColor = PDColorText(0.08);
     [tv reloadData];
 }
 
@@ -111,14 +117,18 @@ static UIImage *PDPaletteSwatch(const PDPalette *p) {
     self.title = @"Ajustes";
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc]
         initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(done)];
-    self.tableView.backgroundColor = PDColorDarkBar();
-    self.tableView.separatorColor = [UIColor colorWithWhite:1 alpha:0.08];
+    self.tableView.backgroundColor = PDColorBar();
+    self.tableView.separatorColor = PDColorText(0.08);
     self.tableView.rowHeight = 56;
 }
 
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
-    [self.tableView reloadData];   // back from the color list
+    // Back from the color list: follow the profile chosen there.
+    PDStyleNavigationBar(self.navigationController.navigationBar);
+    self.tableView.backgroundColor = PDColorBar();
+    self.tableView.separatorColor = PDColorText(0.08);
+    [self.tableView reloadData];
 }
 
 - (void)done {
@@ -163,12 +173,12 @@ static UIImage *PDPaletteSwatch(const PDPalette *p) {
 
 - (void)tableView:(UITableView *)tv willDisplayHeaderView:(UIView *)view forSection:(NSInteger)s {
     if ([view isKindOfClass:[UITableViewHeaderFooterView class]])
-        ((UITableViewHeaderFooterView *)view).textLabel.textColor = [UIColor colorWithWhite:1 alpha:0.5];
+        ((UITableViewHeaderFooterView *)view).textLabel.textColor = PDColorText(0.5);
 }
 
 - (void)tableView:(UITableView *)tv willDisplayFooterView:(UIView *)view forSection:(NSInteger)s {
     if ([view isKindOfClass:[UITableViewHeaderFooterView class]])
-        ((UITableViewHeaderFooterView *)view).textLabel.textColor = [UIColor colorWithWhite:1 alpha:0.4];
+        ((UITableViewHeaderFooterView *)view).textLabel.textColor = PDColorText(0.4);
 }
 
 - (UISlider *)sliderFor:(NSString *)key {
@@ -176,7 +186,7 @@ static UIImage *PDPaletteSwatch(const PDPalette *p) {
     s.minimumValue = 0.5;
     s.maximumValue = 4;
     s.value = [[NSUserDefaults standardUserDefaults] floatForKey:key];
-    s.minimumTrackTintColor = PDColorBlue();
+    s.minimumTrackTintColor = PDColorAccent();
     s.accessibilityIdentifier = key;
     [s addTarget:self action:@selector(sliderChanged:) forControlEvents:UIControlEventValueChanged];
     return s;
@@ -207,9 +217,9 @@ static UIImage *PDPaletteSwatch(const PDPalette *p) {
 
 - (UITableViewCell *)tableView:(UITableView *)tv cellForRowAtIndexPath:(NSIndexPath *)ip {
     UITableViewCell *c = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:nil];
-    c.backgroundColor = PDColorDarkSurface();
-    c.textLabel.textColor = [UIColor whiteColor];
-    c.detailTextLabel.textColor = [UIColor colorWithWhite:1 alpha:0.45];
+    c.backgroundColor = PDColorSurface();
+    c.textLabel.textColor = PDColorText(1);
+    c.detailTextLabel.textColor = PDColorText(0.45);
     c.selectionStyle = UITableViewCellSelectionStyleNone;
     switch ([self rowAt:ip]) {
         case RowPointer:
