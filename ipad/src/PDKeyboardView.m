@@ -2,6 +2,7 @@
 #import "PDConnection.h"
 #import "PDKeys.h"
 #import "PDTheme.h"
+#import "PDIcons.h"
 #import "PDSettings.h"
 #import <AudioToolbox/AudioToolbox.h>
 
@@ -37,6 +38,8 @@ static const CGFloat kUnitsPerRow = 11;
 @property (nonatomic) BOOL pressed;
 @property (nonatomic) int modState;   // 0 off, 1 next key, 2 locked
 @property (nonatomic, strong) UIView *lockBar;
+@property (nonatomic, strong) UIImageView *icon;   // media keys
+@property (nonatomic) CGFloat iconSide;
 - (BOOL)isCharKey;
 @end
 
@@ -63,6 +66,16 @@ static const CGFloat kUnitsPerRow = 11;
             [self addSubview:_shiftLabel];
         }
 
+        if ([spec[K_TYPE] isEqualToString:@"media"]) {
+            // Drawn icon instead of text; the label stays as the VoiceOver name.
+            _icon = [[UIImageView alloc] init];
+            _icon.contentMode = UIViewContentModeCenter;
+            [self addSubview:_icon];
+            _label.hidden = YES;
+            self.isAccessibilityElement = YES;
+            self.accessibilityLabel = spec[K_LABEL];
+        }
+
         _lockBar = [[UIView alloc] init];
         _lockBar.backgroundColor = PDColorOK();
         _lockBar.layer.cornerRadius = 1.5;
@@ -86,6 +99,14 @@ static const CGFloat kUnitsPerRow = 11;
         _label.frame = CGRectInset(b, 6, 4);
     }
     _lockBar.frame = CGRectMake(b.size.width / 2 - 12, b.size.height - 9, 24, 3);
+    if (_icon) {
+        CGFloat side = round(MIN(b.size.width, b.size.height) * 0.42);
+        if (side != _iconSide) {
+            _iconSide = side;
+            _icon.image = PDMediaIcon([self.spec[K_CODE] intValue], side);
+        }
+        _icon.frame = b;
+    }
 }
 
 - (void)refresh {
@@ -96,6 +117,7 @@ static const CGFloat kUnitsPerRow = 11;
     self.backgroundColor = bg;
     // Modifier keys turn the accent color: white text reads on it in every profile.
     self.label.textColor = self.modState > 0 && !self.pressed ? [UIColor whiteColor] : PDColorKeyText(1);
+    self.icon.tintColor = PDColorKeyText(1);
     self.lockBar.hidden = self.modState != 2;
     NSString *label = self.label.text ?: @"";
     if (!special && label.length <= 2) self.label.font = [UIFont systemFontOfSize:28];
@@ -269,10 +291,10 @@ static NSDictionary *Layers(void) {
     NSArray *fn = @[
         r1,
         r2,
-        @[ mediaKey(@"🔅", PDMediaBrightDown, 1.25), mediaKey(@"🔆", PDMediaBrightUp, 1.25),
-           mediaKey(@"◀◀", PDMediaPrev, 1.25), mediaKey(@"▶❚❚", PDMediaPlay, 1.25),
-           mediaKey(@"▶▶", PDMediaNext, 1.25), mediaKey(@"🔇", PDMediaMute, 1.25),
-           mediaKey(@"🔉", PDMediaVolDown, 1.25), mediaKey(@"🔊", PDMediaVolUp, 1.25),
+        @[ mediaKey(@"Brilho −", PDMediaBrightDown, 1.25), mediaKey(@"Brilho +", PDMediaBrightUp, 1.25),
+           mediaKey(@"Anterior", PDMediaPrev, 1.25), mediaKey(@"Play / Pausa", PDMediaPlay, 1.25),
+           mediaKey(@"Próxima", PDMediaNext, 1.25), mediaKey(@"Mudo", PDMediaMute, 1.25),
+           mediaKey(@"Volume −", PDMediaVolDown, 1.25), mediaKey(@"Volume +", PDMediaVolUp, 1.25),
            specialKey(@"⌦", PDKeyForwardDelete, 1) ],
         @[ layerKey(@"ABC", @"abc", 1.25), modKey(@"⇧", PDModShift, 1.25),
            modKey(@"⌃", PDModCtrl, 1), modKey(@"⌥", PDModOpt, 1), modKey(@"⌘", PDModCmd, 1.5),

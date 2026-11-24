@@ -1,3 +1,4 @@
+#import "PDIcons.h"
 #import "PDDeck.h"
 #import <QuartzCore/QuartzCore.h>
 #import "PDConnection.h"
@@ -157,6 +158,8 @@ static NSDictionary *Slot(NSString *title, PDActionType type, NSString *value, N
 @property (nonatomic, strong) UILabel *subtitle;
 @property (nonatomic, strong) CAShapeLayer *dash;
 @property (nonatomic, strong) UIColor *baseColor;
+@property (nonatomic, strong) UIImageView *icon;   // media buttons
+@property (nonatomic) int media;                   // -1: no icon
 @end
 
 @implementation PDDeckButton
@@ -181,6 +184,13 @@ static NSDictionary *Slot(NSString *title, PDActionType type, NSString *value, N
         _subtitle.userInteractionEnabled = NO;
         [self addSubview:_subtitle];
 
+        _media = -1;
+        _icon = [[UIImageView alloc] init];
+        _icon.contentMode = UIViewContentModeCenter;
+        _icon.tintColor = [UIColor whiteColor];
+        _icon.userInteractionEnabled = NO;
+        [self addSubview:_icon];
+
         _dash = [CAShapeLayer layer];
         _dash.fillColor = [UIColor clearColor].CGColor;
         _dash.strokeColor = PDColorText(0.22).CGColor;
@@ -196,6 +206,15 @@ static NSDictionary *Slot(NSString *title, PDActionType type, NSString *value, N
     CGRect b = self.bounds;
     _title.frame = CGRectMake(10, b.size.height / 2 - 30, b.size.width - 20, 34);
     _subtitle.frame = CGRectMake(10, b.size.height / 2 + 6, b.size.width - 20, 22);
+    if (_media >= 0) {
+        // Media: icon above the title, like the App Store app.
+        CGFloat side = round(MIN(b.size.height * 0.26, 36));
+        _icon.image = PDMediaIcon(_media, side);
+        _icon.frame = CGRectMake(0, b.size.height * 0.2, b.size.width, side);
+        _title.frame = CGRectMake(10, CGRectGetMaxY(_icon.frame) + 6, b.size.width - 20, 34);
+    }
+    _icon.hidden = _media < 0;
+    _subtitle.hidden = _media >= 0;
     _dash.frame = b;
     _dash.path = [UIBezierPath bezierPathWithRoundedRect:CGRectInset(b, 1, 1) cornerRadius:16].CGPath;
 }
@@ -222,6 +241,8 @@ static NSDictionary *Slot(NSString *title, PDActionType type, NSString *value, N
         _title.textColor = [UIColor whiteColor];
         _subtitle.text = [PDDeck subtitleFor:slot];
     }
+    self.media = (!empty && [PDDeck typeOf:slot] == PDActionMedia) ? [PDKeys mediaCodeForName:slot[PDSlotValue]] : -1;
+    [self setNeedsLayout];
     self.backgroundColor = self.baseColor;
 }
 
