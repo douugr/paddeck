@@ -4,7 +4,7 @@
 #import "PDTheme.h"
 
 typedef NS_ENUM(NSInteger, PDRow) {
-    RowPointer, RowScroll, RowNatural, RowInertia, RowTapClick, RowTapDrag,   // section 0
+    RowPointer, RowScroll, RowNatural, RowInertia, RowStrip, RowStripLeft, RowTapClick, RowTapDrag,   // section 0
     RowKeepAwake, RowKeyClick, RowKeyboardOnTop,                                   // section 1
     RowResetDeck,                                                 // section 2
     RowAbout,                                                     // section 3
@@ -32,7 +32,10 @@ typedef NS_ENUM(NSInteger, PDRow) {
 }
 
 - (NSArray *)sections {
-    return @[ @[@(RowPointer), @(RowScroll), @(RowNatural), @(RowInertia), @(RowTapClick), @(RowTapDrag)],
+    NSMutableArray *pad = [@[@(RowPointer), @(RowScroll), @(RowNatural), @(RowInertia), @(RowStrip)] mutableCopy];
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:PDPrefScrollStrip]) [pad addObject:@(RowStripLeft)];
+    [pad addObjectsFromArray:@[@(RowTapClick), @(RowTapDrag)]];
+    return @[ pad,
               @[@(RowKeyboardOnTop), @(RowKeyClick), @(RowKeepAwake)],
               @[@(RowResetDeck)],
               @[@(RowAbout)] ];
@@ -55,6 +58,7 @@ typedef NS_ENUM(NSInteger, PDRow) {
 - (NSString *)tableView:(UITableView *)tv titleForFooterInSection:(NSInteger)s {
     if (s == 0) return @"Rolagem com inércia: deslize dois dedos rápido e solte para a página continuar rolando; "
                        @"encoste no trackpad para parar.\n\n"
+                       @"Faixa de rolagem: deslize um dedo pela borda do trackpad para rolar.\n\n"
                        @"Toque duplo e arraste: toque uma vez e, logo em seguida, encoste e arraste para "
                        @"segurar o clique. Com ele ligado, o clique simples espera um instante.";
     if (s == 2) return @"Para editar um botão, segure-o na tela de atalhos.";
@@ -97,6 +101,12 @@ typedef NS_ENUM(NSInteger, PDRow) {
 
 - (void)switchChanged:(UISwitch *)s {
     [[NSUserDefaults standardUserDefaults] setBool:s.on forKey:s.accessibilityIdentifier];
+    if ([s.accessibilityIdentifier isEqualToString:PDPrefScrollStrip]) {
+        // Show or hide the "left side" row under it.
+        NSIndexPath *ip = [NSIndexPath indexPathForRow:5 inSection:0];
+        if (s.on) [self.tableView insertRowsAtIndexPaths:@[ip] withRowAnimation:UITableViewRowAnimationFade];
+        else [self.tableView deleteRowsAtIndexPaths:@[ip] withRowAnimation:UITableViewRowAnimationFade];
+    }
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tv cellForRowAtIndexPath:(NSIndexPath *)ip {
@@ -121,6 +131,14 @@ typedef NS_ENUM(NSInteger, PDRow) {
         case RowNatural:
             c.textLabel.text = @"Rolagem natural";
             c.accessoryView = [self switchFor:PDPrefNaturalScroll];
+            break;
+        case RowStrip:
+            c.textLabel.text = @"Faixa de rolagem";
+            c.accessoryView = [self switchFor:PDPrefScrollStrip];
+            break;
+        case RowStripLeft:
+            c.textLabel.text = @"Faixa do lado esquerdo";
+            c.accessoryView = [self switchFor:PDPrefScrollStripLeft];
             break;
         case RowTapClick:
             c.textLabel.text = @"Tocar para clicar";

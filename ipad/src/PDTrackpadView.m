@@ -15,6 +15,8 @@ static const NSTimeInterval kDragWindow = 0.22;  // delay before a single tap cl
 @property (nonatomic, strong) UILabel *hint;
 @property (nonatomic, strong) UIButton *leftButton;
 @property (nonatomic, strong) UIButton *rightButton;
+@property (nonatomic, strong) UIView *strip;       // one-finger scroll strip on an edge
+@property (nonatomic, strong) UILabel *stripGrip;
 @end
 
 @implementation PDTrackpadView {
@@ -38,6 +40,9 @@ static const NSTimeInterval kDragWindow = 0.22;  // delay before a single tap cl
 
     CGFloat _pointerSpeed, _scrollSpeed;
     BOOL _natural, _tapToClick, _tapToDrag;
+
+    BOOL _stripOn, _stripLeft;
+    UITouch *_stripTouch;     // while set, the strip owns the gesture
 }
 
 - (instancetype)initWithFrame:(CGRect)frame {
@@ -61,8 +66,40 @@ static const NSTimeInterval kDragWindow = 0.22;  // delay before a single tap cl
 
         _leftButton = [self makeButton:@"Clique" tag:0];
         _rightButton = [self makeButton:@"Clique direito" tag:1];
+
+        _strip = [[UIView alloc] init];
+        _strip.backgroundColor = PDColorKeyDark();
+        _strip.layer.cornerRadius = 12;
+        _strip.userInteractionEnabled = NO;
+        _stripGrip = [[UILabel alloc] init];
+        _stripGrip.numberOfLines = 3;
+        _stripGrip.text = @"\u25B2\n\u2261\n\u25BC";   // ▲ ≡ ▼
+        _stripGrip.textColor = [UIColor colorWithWhite:1 alpha:0.25];
+        _stripGrip.font = PDFont(13, PDWeightMedium);
+        _stripGrip.textAlignment = NSTextAlignmentCenter;
+        [_strip addSubview:_stripGrip];
+        [_surface addSubview:_strip];
+
+        NSUserDefaults *d = [NSUserDefaults standardUserDefaults];
+        _stripOn = [d boolForKey:PDPrefScrollStrip];
+        _stripLeft = [d boolForKey:PDPrefScrollStripLeft];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applyStripPrefs)
+                                                     name:NSUserDefaultsDidChangeNotification object:nil];
     }
     return self;
+}
+
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+- (void)applyStripPrefs {
+    NSUserDefaults *d = [NSUserDefaults standardUserDefaults];
+    BOOL on = [d boolForKey:PDPrefScrollStrip], left = [d boolForKey:PDPrefScrollStripLeft];
+    if (on == _stripOn && left == _stripLeft) return;
+    _stripOn = on;
+    _stripLeft = left;
+    dispatch_async(dispatch_get_main_queue(), ^{ [self setNeedsLayout]; });
 }
 
 - (UIButton *)makeButton:(NSString *)title tag:(NSInteger)tag {
@@ -85,7 +122,19 @@ static const NSTimeInterval kDragWindow = 0.22;  // delay before a single tap cl
     CGRect b = self.bounds;
     CGFloat gap = 8;
     _surface.frame = CGRectMake(0, 0, b.size.width, b.size.height - kButtonsHeight - gap);
-    _hint.frame = _surface.bounds;
+    CGFloat stripW = 56, inset = 6;
+    CGRect sb = _surface.bounds;
+    _strip.hidden = !_stripOn;
+    _strip.frame = CGRectMake(_stripLeft ? inset : sb.size.width - stripW - inset, inset,
+                              stripW, MAX(sb.size.height - inset * 2, 0));
+    _stripGrip.frame = _strip.bounds;
+    // Keep the hint centred in the area that still moves the pointer.
+    CGRect free = sb;
+    if (_stripOn) {
+        free.size.width -= stripW + inset;
+        if (_stripLeft) free.origin.x += stripW + inset;
+    }
+    _hint.frame = free;
     CGFloat w = (b.size.width - gap) / 2;
     CGFloat y = b.size.height - kButtonsHeight;
     _leftButton.frame = CGRectMake(0, y, w, kButtonsHeight);
@@ -116,12 +165,32 @@ static const NSTimeInterval kDragWindow = 0.22;  // delay before a single tap cl
     _inertia = [d boolForKey:PDPrefInertialScroll];
 }
 
+- (BOOL)inStrip:(UITouch *)t {
+    if (!_stripOn || _strip.hidden) return NO;
+    // A little extra margin makes the edge easy to hit.
+    CGRect r = CGRectInset([_surface convertRect:_strip.frame toView:self], -6, 0);
+    return CGRectContainsPoint(r, [t locationInView:self]);
+}
+
 - (BOOL)inSurface:(UITouch *)t {
     return CGRectContainsPoint(_surface.frame, [t locationInView:self]);
 }
 
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {
     [self stopMomentum];   // touching the trackpad stops a flick, like on the Mac
+    if (_stripTouch) return;
+    if (_touches.count == 0 && !_clickTimer) {
+        for (UITouch *t in touches) {
+            if (![self inStrip:t]) continue;
+            [self loadPrefs];
+            _stripTouch = t;
+            if (!_scrollSamples) _scrollSamples = [NSMutableArray array];
+            [_scrollSamples removeAllObjects];
+            _scrollRemX = _scrollRemY = 0;
+            _strip.backgroundColor = PDColorKeyActive();
+            return;
+        }
+    }
     if (_touches.count == 0) {
         if (!_scrollSamples) _scrollSamples = [NSMutableArray array];
         [_scrollSamples removeAllObjects];
@@ -164,6 +233,20 @@ static const NSTimeInterval kDragWindow = 0.22;  // delay before a single tap cl
 }
 
 - (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event {
+    if (_stripTouch) {
+        if (![touches containsObject:_stripTouch]) return;
+        CGFloat dy = [_stripTouch locationInView:self].y - [_stripTouch previousLocationInView:self].y;
+        // A bit faster than two fingers: the strip is narrow and used with one finger.
+        CGFloat v = dy * _scrollSpeed * 1.5 * (_natural ? 1 : -1);
+        CGFloat fy = v + _scrollRemY;
+        int iy = (int)lround(fy);
+        _scrollRemY = fy - iy;
+        if (iy) [[PDConnection shared] sendScrollDY:iy dx:0];
+        CFTimeInterval now = CACurrentMediaTime();
+        [_scrollSamples addObject:@[@(now), @0, @(v)]];
+        while (_scrollSamples.count && now - [_scrollSamples[0][0] doubleValue] > 0.1) [_scrollSamples removeObjectAtIndex:0];
+        return;
+    }
     if (_touches.count == 0) return;
     CGPoint d = [self averageDelta];
     CGFloat dist = hypot(d.x, d.y);
@@ -263,6 +346,13 @@ static const NSTimeInterval kDragWindow = 0.22;  // delay before a single tap cl
 }
 
 - (void)finish:(NSSet *)touches cancelled:(BOOL)cancelled {
+    if (_stripTouch) {
+        if (![touches containsObject:_stripTouch]) return;
+        _stripTouch = nil;
+        _strip.backgroundColor = PDColorKeyDark();
+        if (!cancelled && _inertia) [self startMomentum];
+        return;
+    }
     for (UITouch *t in touches) [_touches removeObject:t];
     if (_touches.count > 0) return;
     _surface.backgroundColor = PDColorSurface();

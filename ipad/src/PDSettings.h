@@ -10,6 +10,8 @@
 #define PDPrefShowKeyboard   @"showKeyboard"    // bool
 #define PDPrefKeyboardOnTop   @"keyboardOnTop"   // bool: keyboard above the trackpad
 #define PDPrefInertialScroll @"inertialScroll"  // bool: momentum scrolling
+#define PDPrefScrollStrip    @"scrollStrip"     // bool: one-finger scroll strip on the trackpad edge
+#define PDPrefScrollStripLeft @"scrollStripLeft" // bool: strip on the left edge
 #define PDPrefKeyClick       @"keyClick"        // bool: click sound on keys
 #define PDPrefLastHost       @"lastHost"        // string (IP)
 #define PDPrefLastName       @"lastName"        // string (Mac name)
