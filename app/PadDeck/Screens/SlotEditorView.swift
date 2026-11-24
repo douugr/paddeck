@@ -88,7 +88,7 @@ struct SlotEditorView: View {
                             Circle()
                                 .fill(Color(Theme.deckColors[i]))
                                 .frame(width: 36, height: 36)
-                                .overlay(Circle().stroke(Color.white, lineWidth: color == i ? 3 : 0))
+                                .overlay(Circle().stroke(Color.primary, lineWidth: color == i ? 3 : 0))
                                 .onTapGesture { color = i }
                                 .accessibilityAddTraits(color == i ? .isSelected : [])
                         }
@@ -112,6 +112,6 @@ struct SlotEditorView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(Theme.isLight ? .light : .dark)
     }
 }

@@ -83,7 +83,7 @@ struct ConnectView: View {
         } message: {
             Text("The Mac's address on the network (System Settings › Wi-Fi › Details).")
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(Theme.isLight ? .light : .dark)
     }
 
     private func row(_ name: String) -> some View {

@@ -15,6 +15,7 @@ struct SettingsView: View {
     @AppStorage("keyClick") private var keyClick = true
     @AppStorage("keyHaptics") private var keyHaptics = true
     @AppStorage("keepAwake") private var keepAwake = true
+    @AppStorage("theme") private var theme = "dark"
     @State private var confirmReset = false
 
     private var isPhone: Bool { UIDevice.current.userInterfaceIdiom == .phone }
@@ -22,6 +23,11 @@ struct SettingsView: View {
         let v = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
         let b = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?"
         return "\(v) (\(b))"
+    }
+
+    private var themeLabel: String {
+        let p = Theme.palette(id: theme)
+        return p.line == .paddeck ? p.localizedName : "\(p.line.rawValue) · \(p.localizedName)"
     }
 
     var body: some View {
@@ -46,6 +52,24 @@ struct SettingsView: View {
                     Text("Trackpad")
                 } footer: {
                     Text("Momentum scrolling: swipe two fingers quickly and let go to keep the page scrolling; touch the trackpad to stop.\n\nScroll strip: slide one finger along the edge of the trackpad to scroll.\n\nDouble-tap and drag: tap once, then touch again and drag to hold the click. With it on, a single click waits a moment.")
+                }
+
+                Section {
+                    NavigationLink {
+                        ThemePickerView()
+                    } label: {
+                        HStack(spacing: 14) {
+                            ThemeSwatch(palette: Theme.palette(id: theme))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Colors")
+                                Text(themeLabel).font(.footnote).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Appearance")
+                } footer: {
+                    Text("Match PadDeck to the color of your Mac.")
                 }
 
                 Section("Keyboard") {
@@ -82,6 +106,6 @@ struct SettingsView: View {
                 Text("All buttons go back to the defaults. Buttons you created will be deleted.")
             }
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(Theme.isLight ? .light : .dark)
     }
 }

@@ -27,7 +27,7 @@ private final class DeckButton: UIControl {
             addSubview(v)
         }
         dash.fillColor = UIColor.clear.cgColor
-        dash.strokeColor = UIColor(white: 1, alpha: 0.18).cgColor
+        dash.strokeColor = Theme.text(0.22).cgColor
         dash.lineWidth = 2
         dash.lineDashPattern = [8, 6]
         layer.addSublayer(dash)
@@ -70,7 +70,7 @@ private final class DeckButton: UIControl {
         } else {
             baseColor = .clear
             titleLabel.text = "+"
-            titleLabel.textColor = UIColor(white: 1, alpha: 0.25)
+            titleLabel.textColor = Theme.text(0.3)
             subtitleLabel.text = ""
             icon.image = nil
         }
