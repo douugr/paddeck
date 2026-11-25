@@ -1,8 +1,5 @@
 build/
 build.log
 .DS_Store
-app/PadDeck.xcodeproj/
 xcuserdata/
 DerivedData/
-app/AppStore/publish.log
-app/build/

@@ -14,7 +14,7 @@ REPO = "https://github.com/douugr/paddeck"
 CYDIA = "https://douugr.github.io/repo/"
 APPSTORE = "https://apps.apple.com/app/id6838387257"
 
-# (line, name EN, name PT, trackpad, key, accent) — same values as app/PadDeck/UI/Theme.swift
+# (line, name EN, name PT, trackpad, key, accent) — same values as the App Store app (Theme.swift) and ipad/src/PDTheme.m
 SWATCHES = [
     ("MacBook Neo", "Silver", "Prateado", "#D0D1D5", "#F7F7F9", "#0A6FE0"),
     ("MacBook Neo", "Blush", "Blush", "#E5CEC9", "#FBF1EF", "#C25B73"),
