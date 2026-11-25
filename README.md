@@ -1,7 +1,17 @@
 # PadDeck
 
-Turn an old jailbroken iPad (iOS 8) into a wireless **keyboard, trackpad and Stream Deck-style
+Turn your iPhone or iPad into a wireless **keyboard, trackpad and Stream Deck-style
 shortcut panel** for your Mac.
+
+- **iPhone and iPad (iOS 16+):** [PadDeck on the App Store](https://apps.apple.com/app/id6838387257) — source in [`app/`](app/README.md)
+- **Old jailbroken iPads (iOS 8–10):** PadDeck in the Cydia repo [douugr.github.io/repo](https://douugr.github.io/repo/) — source in [`ipad/`](ipad/)
+- **Mac:** the free [PadDeck for Mac](https://github.com/douugr/paddeck/releases/latest) menu bar app — source in [`mac-agent/`](mac-agent/)
+
+> **The Mac app works together with the iPhone/iPad app.** On its own it does nothing: it receives
+> the touches and keys from PadDeck on your iPhone or iPad and turns them into pointer and keyboard
+> events on the Mac. Install both.
+
+Website: [douugr.github.io/paddeck](https://douugr.github.io/paddeck/)
 
 <img src="docs/icon-512.png" width="128" alt="PadDeck icon">
 
@@ -24,8 +34,8 @@ iPads and iPhones (iOS 16+, no jailbreak) lives in [`app/`](app/README.md).
 ## Mac agent
 
 **Download:** `PadDeck-mac.zip` from the [latest release](https://github.com/douugr/paddeck/releases/latest)
-(macOS 12+, Apple silicon and Intel). Unzip, move **PadDeck** to Applications, then right-click it
-› **Open** the first time (it isn't notarized).
+(macOS 12+, Apple silicon and Intel). Unzip, move **PadDeck** to Applications and open it.
+It is signed with a Developer ID and notarized by Apple.
 
 To build it yourself (Xcode or Command Line Tools):
 

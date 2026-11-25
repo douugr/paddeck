@@ -12,6 +12,7 @@ MAC_ZIP = "https://github.com/douugr/paddeck/releases/latest/download/PadDeck-ma
 RELEASES = "https://github.com/douugr/paddeck/releases/latest"
 REPO = "https://github.com/douugr/paddeck"
 CYDIA = "https://douugr.github.io/repo/"
+APPSTORE = "https://apps.apple.com/app/id6838387257"
 
 # (line, name EN, name PT, trackpad, key, accent) — same values as app/PadDeck/UI/Theme.swift
 SWATCHES = [
@@ -41,7 +42,9 @@ T = {
         hero_h="Your iPhone and iPad, now a keyboard, trackpad and shortcut deck for your Mac.",
         hero_p="Control your Mac from the couch, run a presentation, or keep a row of one-tap shortcuts next to your keyboard. Over Wi-Fi or a USB cable.",
         dl="Download for Mac", dl_meta="Free · macOS 12 or later · Apple silicon and Intel",
-        ios_soon="The iPhone and iPad app is coming soon to the App Store.",
+        appstore="Get it on the App Store", appstore_meta="iPhone and iPad · iOS 16 or later",
+        dl_mac="PadDeck for Mac",
+        pair_note="PadDeck has two parts that work together: the app on your iPhone or iPad, where you touch, and the free PadDeck for Mac, which moves the pointer and types. The Mac app does nothing on its own.",
         alt_ipad="PadDeck on iPad: trackpad with a full Mac keyboard",
         alt_iphone="PadDeck on iPhone: shortcut deck",
         feat_h="Everything a Mac trackpad and keyboard do",
@@ -57,6 +60,7 @@ T = {
         colors_p="Pick the color of your MacBook Neo, Air, Pro or iMac, and PadDeck takes on the same finish: trackpad, keys and accent.",
         steps_h="Set up in a minute",
         steps=[
+            ("Get the iPhone or iPad app", "Download PadDeck from the App Store on the iPhone or iPad you'll use as a trackpad and keyboard."),
             ("Install PadDeck for Mac", "Download it, move it to Applications and open it. A keyboard icon appears in the menu bar."),
             ("Allow Accessibility", "In System Settings › Privacy & Security › Accessibility, turn PadDeck on so it can move the pointer and type."),
             ("Connect", "Open PadDeck on your iPhone or iPad, pick your Mac and enter the PIN shown in the menu bar. With a USB cable it connects by itself."),
@@ -83,7 +87,9 @@ T = {
         hero_h="O seu iPhone e iPad viram teclado, trackpad e painel de atalhos do Mac.",
         hero_p="Controle o Mac do sofá, passe os slides de uma apresentação ou tenha uma fileira de atalhos de um toque ao lado do teclado. Pelo Wi-Fi ou por cabo USB.",
         dl="Baixar para Mac", dl_meta="Grátis · macOS 12 ou mais novo · Apple silicon e Intel",
-        ios_soon="O app para iPhone e iPad chega em breve à App Store.",
+        appstore="Baixar na App Store", appstore_meta="iPhone e iPad · iOS 16 ou mais novo",
+        dl_mac="PadDeck para Mac",
+        pair_note="O PadDeck tem duas partes que funcionam juntas: o app no iPhone ou iPad, onde você toca, e o PadDeck para Mac, gratuito, que move o cursor e digita. O app do Mac sozinho não faz nada.",
         alt_ipad="PadDeck no iPad: trackpad com teclado de Mac completo",
         alt_iphone="PadDeck no iPhone: painel de atalhos",
         feat_h="Tudo o que o trackpad e o teclado do Mac fazem",
@@ -99,6 +105,7 @@ T = {
         colors_p="Escolha a cor do seu MacBook Neo, Air, Pro ou iMac e o PadDeck fica com o mesmo acabamento: trackpad, teclas e cor de destaque.",
         steps_h="Pronto em um minuto",
         steps=[
+            ("Baixe o app no iPhone ou iPad", "Baixe o PadDeck na App Store, no iPhone ou iPad que vai servir de trackpad e teclado."),
             ("Instale o PadDeck para Mac", "Baixe, mova para Aplicativos e abra. Um ícone de teclado aparece na barra de menus."),
             ("Permita a Acessibilidade", "Em Ajustes do Sistema › Privacidade e Segurança › Acessibilidade, ligue o PadDeck para ele mover o cursor e digitar."),
             ("Conecte", "Abra o PadDeck no iPhone ou iPad, escolha o seu Mac e digite o PIN que aparece na barra de menus. Com cabo USB, conecta sozinho."),
@@ -136,7 +143,13 @@ a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
 .btn{display:inline-flex;align-items:center;gap:10px;background:var(--accent);color:#fff;border-radius:980px;padding:14px 28px;font-size:18px;font-weight:600}
 .btn:hover{text-decoration:none;filter:brightness(1.08)}.btn svg{width:20px;height:20px;fill:currentColor}
 .meta{color:var(--muted);font-size:14px}
-.soon{display:inline-block;margin-top:14px;font-size:15px;color:var(--muted);border:1px solid var(--line);border-radius:980px;padding:6px 14px}
+.pair{display:flex;justify-content:center;align-items:flex-start;gap:18px;margin:32px auto 0;flex-wrap:wrap}
+.part{display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;max-width:300px}
+.part .num{width:24px;height:24px;border-radius:50%;background:var(--text);color:var(--bg);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.plus{font-size:28px;color:var(--muted);margin-top:38px}
+.btn.alt{background:var(--card);color:var(--text);box-shadow:inset 0 0 0 1px var(--line)}
+.note{max-width:620px;margin:20px auto 0;font-size:15px;color:var(--muted);background:var(--card);border-radius:14px;padding:12px 18px;text-align:left}
+@media (max-width:640px){.plus{margin:0}.pair{flex-direction:column;align-items:center}}
 .devices{position:relative;max-width:980px;margin:48px auto 0;padding-bottom:40px}
 .devices .ipad{width:84%;height:auto;border-radius:22px;border:10px solid #1d1d1f;box-shadow:0 30px 60px rgba(0,0,0,.25);display:block}
 .devices .iphone{position:absolute;right:0;bottom:0;width:22%;height:auto;border-radius:30px;border:7px solid #1d1d1f;box-shadow:0 24px 50px rgba(0,0,0,.35)}
@@ -151,7 +164,7 @@ h2{font-size:clamp(28px,3.6vw,40px);letter-spacing:-.015em;line-height:1.12;text
 .sw .mini{height:64px;border-radius:10px;padding:7px;display:flex;flex-direction:column;gap:5px;margin-bottom:8px;border:1px solid var(--line)}
 .sw .pad{flex:1;border-radius:5px}.sw .keys{display:flex;gap:3px;height:14px}.sw .keys i{flex:1;border-radius:3px}
 .sw small{display:block;color:var(--muted);font-size:12px}
-.steps{counter-reset:s;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.steps{counter-reset:s;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
 .steps .card{position:relative;padding-top:58px}
 .steps .card:before{counter-increment:s;content:counter(s);position:absolute;top:20px;left:26px;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center}
 .legacy{display:flex;gap:24px;align-items:center;flex-wrap:wrap}.legacy div{flex:1;min-width:260px}
@@ -164,6 +177,9 @@ footer{color:var(--muted);font-size:13px;text-align:center;padding:32px 0 48px;b
 """
 
 DL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a1 1 0 0 1 1 1v9.6l3.3-3.3a1 1 0 1 1 1.4 1.4l-5 5a1 1 0 0 1-1.4 0l-5-5a1 1 0 1 1 1.4-1.4l3.3 3.3V4a1 1 0 0 1 1-1zM5 19h14a1 1 0 1 1 0 2H5a1 1 0 1 1 0-2z"/></svg>'
+
+
+PHONE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 2v16h8V4H8zm3 13h2a1 1 0 1 1 0 2h-2a1 1 0 1 1 0-2z"/></svg>'
 
 
 def esc(s):
@@ -203,9 +219,12 @@ def build(code):
 <img class="icon" src="{b}icon-512.png" alt="">
 <h1>{esc(t['hero_h'])}</h1>
 <p class="lead">{esc(t['hero_p'])}</p>
-<div class="cta"><a class="btn" href="{MAC_ZIP}">{DL}{esc(t['dl'])}</a>
-<span class="meta">{esc(t['dl_meta'])} · <a href="{RELEASES}">{esc(t['all_releases'])}</a></span></div>
-<span class="soon">{esc(t['ios_soon'])}</span>
+<div class="pair">
+<div class="part"><span class="num">1</span><a class="btn" href="{APPSTORE}">{PHONE}{esc(t['appstore'])}</a><span class="meta">{esc(t['appstore_meta'])}</span></div>
+<div class="plus" aria-hidden="true">+</div>
+<div class="part"><span class="num">2</span><a class="btn alt" href="{MAC_ZIP}">{DL}{esc(t['dl'])}</a><span class="meta">{esc(t['dl_meta'])} · <a href="{RELEASES}">{esc(t['all_releases'])}</a></span></div>
+</div>
+<p class="note">{esc(t['pair_note'])}</p>
 </div>
 
 <div class="devices">
@@ -218,7 +237,7 @@ def build(code):
 <section><h2>{esc(t['colors_h'])}</h2><p class="sub">{esc(t['colors_p'])}</p><div class="swatches">{sw}</div></section>
 
 <section><h2>{esc(t['steps_h'])}</h2><div class="steps" style="margin-top:28px">{steps}</div>
-<div class="cta"><a class="btn" href="{MAC_ZIP}">{DL}{esc(t['dl'])}</a></div></section>
+<div class="cta" style="flex-direction:row;justify-content:center;flex-wrap:wrap"><a class="btn" href="{APPSTORE}">{PHONE}{esc(t['appstore'])}</a><a class="btn alt" href="{MAC_ZIP}">{DL}{esc(t['dl'])}</a></div></section>
 
 <section><h2>{esc(t['trust_h'])}</h2><div class="grid" style="margin-top:28px">{trust}</div></section>
 
