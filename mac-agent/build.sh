@@ -37,7 +37,7 @@ case "${1:-}" in
     ;;
   notarize)
     # Signs with your Developer ID, notarizes with Apple and staples the ticket, then zips.
-    # One-time setup: see app/AppStore/RELEASE.md ("Notarize the Mac app").
+    # One-time setup: see the comment at the top of mac-agent/release.sh.
     IDENTITY="${DEVELOPER_ID:-Developer ID Application}"
     PROFILE="${NOTARY_PROFILE:-paddeck-notary}"
     codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP"

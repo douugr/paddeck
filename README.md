@@ -3,7 +3,7 @@
 Turn your iPhone or iPad into a wireless **keyboard, trackpad and Stream Deck-style
 shortcut panel** for your Mac.
 
-- **iPhone and iPad (iOS 16+):** [PadDeck on the App Store](https://apps.apple.com/app/id6838387257) — source in [`app/`](app/README.md)
+- **iPhone and iPad (iOS 16+):** [PadDeck on the App Store](https://apps.apple.com/app/id6838387257) (closed source since November 2026)
 - **Old jailbroken iPads (iOS 8–10):** PadDeck in the Cydia repo [douugr.github.io/repo](https://douugr.github.io/repo/) — source in [`ipad/`](ipad/)
 - **Mac:** the free [PadDeck for Mac](https://github.com/douugr/paddeck/releases/latest) menu bar app — source in [`mac-agent/`](mac-agent/)
 
@@ -28,8 +28,10 @@ Website: [douugr.github.io/paddeck](https://douugr.github.io/paddeck/)
 - **USB cable mode**: plug the iPad into the Mac and it connects by itself through usbmuxd
   (no PIN, lower and steadier latency, charges while you use it). Unplug and it falls back to Wi-Fi.
 
-It has two parts: the iPad app and a small menu bar agent for the Mac. A version for current
-iPads and iPhones (iOS 16+, no jailbreak) lives in [`app/`](app/README.md).
+This repository has the open-source parts: the iOS 8 app (`ipad/`), the Mac menu bar agent
+(`mac-agent/`), the protocol (`docs/PROTOCOL.md`) and the website (`docs/`). The App Store app for
+current iPhones and iPads is developed separately; its code up to November 2026 is in this
+repository's history under the MIT license.
 
 ## Mac agent
 
