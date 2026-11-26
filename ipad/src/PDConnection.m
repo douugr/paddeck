@@ -1,6 +1,7 @@
 #import "PDConnection.h"
 #import "PDSettings.h"
 #import <UIKit/UIKit.h>
+#include "pdcrypto.h"
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -16,11 +17,49 @@ static const uint16_t kTCPPort = 47816;
 static const uint16_t kUDPPort = 47817;
 static const uint16_t kUSBPort = 47818;   // the Mac agent reaches this through usbmuxd (cable)
 
+// Protocol v2: over Wi-Fi everything is encrypted (see docs/PROTOCOL.md). The PIN pairs the iPad
+// once; later connections use the keys exchanged then. The cable stays in the clear.
+static const uint8_t kVersion = 2;
+
 enum {
-    kHello = 0x01, kPing = 0x02, kButton = 0x10, kMove = 0x11, kScroll = 0x12,
+    kHello = 0x01, kPing = 0x02, kPair = 0x03, kResume = 0x04, kReady = 0x05,
+    kButton = 0x10, kMove = 0x11, kScroll = 0x12,
     kText = 0x20, kKey = 0x21, kMedia = 0x22, kOpen = 0x23,
     kWelcome = 0x81, kDenied = 0x82, kPong = 0x83,
+    kServerHello = 0x84, kPairReply = 0x85, kResumeReply = 0x86,
+    kSealed = 0xE0,
 };
+
+enum { kDeniedPIN = 1, kDeniedLocked = 2, kDeniedVersion = 3, kDeniedNotPaired = 4 };
+
+static NSString *Hex(const uint8_t *b, size_t n) {
+    NSMutableString *s = [NSMutableString stringWithCapacity:n * 2];
+    for (size_t i = 0; i < n; i++) [s appendFormat:@"%02x", b[i]];
+    return s;
+}
+
+#pragma mark - Identity
+
+/// This iPad's long-term key: Library/PadDeck/identity.key (readable only by the app's user).
+static uint8_t gSecretKey[32], gPublicKey[32];
+
+static void LoadIdentity(void) {
+    NSString *dir = [NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES).firstObject
+                     stringByAppendingPathComponent:@"PadDeck"];
+    NSString *file = [dir stringByAppendingPathComponent:@"identity.key"];
+    NSData *d = [NSData dataWithContentsOfFile:file];
+    if (d.length == 32) {
+        memcpy(gSecretKey, d.bytes, 32);
+    } else {
+        pd_keypair(gSecretKey, gPublicKey);
+        NSFileManager *fm = [NSFileManager defaultManager];
+        [fm createDirectoryAtPath:dir withIntermediateDirectories:YES
+                       attributes:@{NSFilePosixPermissions: @0700} error:NULL];
+        [fm createFileAtPath:file contents:[NSData dataWithBytes:gSecretKey length:32]
+                  attributes:@{NSFilePosixPermissions: @0600}];
+    }
+    pd_public_key(gPublicKey, gSecretKey);
+}
 
 @interface PDConnection ()
 @property (nonatomic, readwrite) PDState state;
@@ -38,7 +77,16 @@ enum {
     dispatch_source_t _readSource;
     dispatch_source_t _pingTimer;
     NSMutableData *_buffer;
-    uint32_t _token;          // 0 until WELCOME
+    BOOL _authed;             // NO until WELCOME
+    pd_session _session;      // keys, valid while _secure
+    BOOL _secure;
+    uint32_t _sessionID;      // from WELCOME, identifies our UDP datagrams
+    pd_pair_state _pairState;
+    BOOL _pairing;
+    pd_resume_state _resumeState;
+    BOOL _resuming;
+    uint8_t _macKey[32];
+    BOOL _haveMacKey;
     BOOL _wanted;             // user wants to be connected (drives auto-reconnect)
     NSUInteger _generation;   // invalidates retries scheduled for older attempts
     CFAbsoluteTime _lastRx;
@@ -63,12 +111,23 @@ enum {
         _udp = -1;
         _buffer = [NSMutableData data];
         _usbListen = -1;
-        dispatch_async(_q, ^{ [self startUSBListener]; });
+        [[NSUserDefaults standardUserDefaults] removeObjectForKey:PDPrefPins];   // replaced by pairing
+        dispatch_async(_q, ^{
+            LoadIdentity();
+            [self startUSBListener];
+        });
     }
     return self;
 }
 
 #pragma mark - Public
+
++ (BOOL)isPairedTarget:(NSString *)nameOrHost {
+    if (!nameOrHost.length) return NO;
+    NSUserDefaults *d = [NSUserDefaults standardUserDefaults];
+    NSString *key = [d dictionaryForKey:PDPrefPairedTargets][nameOrHost];
+    return key && [d dictionaryForKey:PDPrefPairedMacs][key] != nil;
+}
 
 - (void)connectToHost:(NSString *)host name:(NSString *)name pin:(NSString *)pin {
     self.host = host;
@@ -101,10 +160,10 @@ enum {
     dispatch_async(_q, ^{
         self->_usbBlocked = NO;
         if (self->_usbListen < 0) [self startUSBListener];
-        if (self->_wanted && self->_token == 0 && self->_tcp < 0) {
+        if (self->_wanted && !self->_authed && self->_tcp < 0) {
             self->_generation++;
             [self open];
-        } else if (self->_wanted && self->_token != 0) {
+        } else if (self->_wanted && self->_authed) {
             // The socket may have died while suspended; a ping will tell.
             [self sendFrame:kPing payload:nil];
         }
@@ -199,7 +258,7 @@ enum {
     struct timeval stv = { 2, 0 };
     setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &stv, sizeof stv);
     [_buffer setLength:0];
-    _token = 0;
+    [self resetSession];
     _lastRx = CFAbsoluteTimeGetCurrent();
 
     dispatch_source_t src = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ, (uintptr_t)fd, 0, _q);
@@ -209,14 +268,14 @@ enum {
     dispatch_resume(src);
     _readSource = src;
 
-    // HELLO: version, pinLen, pin, device name
-    NSData *pin = [pinText dataUsingEncoding:NSUTF8StringEncoding] ?: [NSData data];
-    NSData *name = [[[UIDevice currentDevice] name] dataUsingEncoding:NSUTF8StringEncoding] ?: [NSData data];
-    NSMutableData *hello = [NSMutableData data];
-    uint8_t head[2] = { 1, (uint8_t)MIN(pin.length, 255) };
-    [hello appendBytes:head length:2];
-    [hello appendBytes:pin.bytes length:head[1]];
-    [hello appendData:name];
+    // HELLO. Cable: version, empty PIN, device name (the Mac trusts the cable).
+    // Wi-Fi: just the version; the name only travels encrypted, in READY.
+    NSMutableData *hello = [NSMutableData dataWithBytes:&kVersion length:1];
+    if (_usb) {
+        uint8_t noPin = 0;
+        [hello appendBytes:&noPin length:1];
+        [hello appendData:[[[UIDevice currentDevice] name] dataUsingEncoding:NSUTF8StringEncoding] ?: [NSData data]];
+    }
     [self sendFrame:kHello payload:hello];
 
     _pingTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, _q);
@@ -230,8 +289,20 @@ enum {
     if (_readSource) { dispatch_source_cancel(_readSource); _readSource = nil; }  // closes _tcp
     _tcp = -1;
     if (_udp >= 0) { close(_udp); _udp = -1; }
-    _token = 0;
+    [self resetSession];
     _usb = NO;
+}
+
+- (void)resetSession {
+    _authed = NO;
+    _secure = NO;
+    _pairing = NO;
+    _resuming = NO;
+    _haveMacKey = NO;
+    _sessionID = 0;
+    pd_session_wipe(&_session);
+    memset(&_pairState, 0, sizeof _pairState);
+    memset(&_resumeState, 0, sizeof _resumeState);
 }
 
 #pragma mark - Cable (usbmuxd)
@@ -336,66 +407,167 @@ enum {
         uint8_t type = b[0];
         NSData *payload = [_buffer subdataWithRange:NSMakeRange(3, len)];
         [_buffer replaceBytesInRange:NSMakeRange(0, 3 + len) withBytes:NULL length:0];
-        [self handle:type payload:payload];
+        if (type == kSealed) {
+            NSMutableData *plain = [NSMutableData dataWithLength:len > PD_TAG_SIZE ? len - PD_TAG_SIZE : 0];
+            uint8_t head[3] = { kSealed, (uint8_t)(len >> 8), (uint8_t)(len & 0xff) };
+            if (!_secure || len <= PD_TAG_SIZE ||
+                pd_open(&_session, head, 3, payload.bytes, len, plain.mutableBytes) != 0) {
+                [self failed:@"Não foi possível verificar o Mac"];
+                return;
+            }
+            const uint8_t *pb = plain.bytes;
+            [self handleSealed:pb[0] payload:[plain subdataWithRange:NSMakeRange(1, plain.length - 1)]];
+        } else {
+            [self handle:type payload:payload];
+        }
         if (_tcp < 0) return;
     }
 }
 
+/// Frames in the clear: the handshake, DENIED, and everything on the cable.
 - (void)handle:(uint8_t)type payload:(NSData *)p {
     const uint8_t *b = p.bytes;
     switch (type) {
-        case kWelcome: {
-            if (p.length < 4) return;
-            _token = ((uint32_t)b[0] << 24) | ((uint32_t)b[1] << 16) | ((uint32_t)b[2] << 8) | b[3];
-            NSString *name = [[NSString alloc] initWithData:[p subdataWithRange:NSMakeRange(4, p.length - 4)]
-                                                  encoding:NSUTF8StringEncoding];
-            if (!name.length) name = _qName.length ? _qName : _qHost;
-            NSString *host = _qHost, *pin = _qPin;
-            if (!_usb) dispatch_async(dispatch_get_main_queue(), ^{
-                NSUserDefaults *d = [NSUserDefaults standardUserDefaults];
-                [d setObject:host forKey:PDPrefLastHost];
-                [d setObject:name forKey:PDPrefLastName];
-                NSMutableDictionary *pins = [[d dictionaryForKey:PDPrefPins] mutableCopy] ?: [NSMutableDictionary dictionary];
-                pins[host] = pin;
-                pins[name] = pin;
-                [d setObject:pins forKey:PDPrefPins];
-            });
-            [self publishState:PDStateConnected macName:name error:nil];
+        case kWelcome:
+            if (!_usb || p.length < 4) return;
+            [self welcome:[p subdataWithRange:NSMakeRange(4, p.length - 4)]];
             break;
-        }
-        case kDenied: {
-            int reason = p.length ? b[0] : 1;
-            _wanted = NO;
-            _generation++;
-            [self closeSockets];
-            NSString *host = _qHost, *name = _qName;
-            dispatch_async(dispatch_get_main_queue(), ^{
-                self.lastDenyReason = reason;
-                if (reason == 1) {   // forget the wrong PIN
-                    NSUserDefaults *d = [NSUserDefaults standardUserDefaults];
-                    NSMutableDictionary *pins = [[d dictionaryForKey:PDPrefPins] mutableCopy];
-                    if (host) [pins removeObjectForKey:host];
-                    if (name) [pins removeObjectForKey:name];
-                    if (pins) [d setObject:pins forKey:PDPrefPins];
+        case kServerHello: {
+            if (_usb || _haveMacKey) return;
+            if (p.length != 33 || b[0] != kVersion) { [self deny:kDeniedVersion]; return; }
+            memcpy(_macKey, b + 1, 32);
+            _haveMacKey = YES;
+            NSString *hex = Hex(_macKey, 32);
+            if ([[NSUserDefaults standardUserDefaults] dictionaryForKey:PDPrefPairedMacs][hex]) {
+                uint8_t msg[64];
+                memcpy(msg, gPublicKey, 32);
+                pd_resume_client_start(&_resumeState, msg + 32);
+                _resuming = YES;
+                [self sendFrame:kResume payload:[NSData dataWithBytes:msg length:64]];
+            } else {
+                const char *pin = _qPin.UTF8String ?: "";
+                uint8_t msg[PD_PAIR_MSG];
+                if (pd_pair_client_start(&_pairState, _macKey, pin, strlen(pin), msg) != 0) {
+                    [self deny:kDeniedNotPaired];   // not paired yet: ask for the PIN
+                    return;
                 }
-            });
-            NSString *msg = reason == 2 ? @"Muitas tentativas. Aguarde 1 minuto."
-                          : reason == 3 ? @"Versão do agente incompatível."
-                          : @"PIN incorreto.";
-            [self publishState:PDStateIdle macName:nil error:msg];
+                _pairing = YES;
+                [self sendFrame:kPair payload:[NSData dataWithBytes:msg length:sizeof msg]];
+            }
             break;
         }
+        case kPairReply:
+            if (!_pairing) return;
+            _pairing = NO;
+            if (p.length != 32 || pd_pair_client_finish(&_session, &_pairState, b) != 0) {
+                [self failed:@"Não foi possível verificar o Mac"];
+                return;
+            }
+            [self startEncryption];
+            break;
+        case kResumeReply:
+            if (!_resuming) return;
+            _resuming = NO;
+            if (p.length != 32 ||
+                pd_resume_client_finish(&_session, &_resumeState, gSecretKey, gPublicKey, _macKey, b) != 0) {
+                [self failed:@"Não foi possível verificar o Mac"];
+                return;
+            }
+            [self startEncryption];
+            break;
+        case kDenied:
+            [self deny:p.length ? b[0] : kDeniedPIN];
+            break;
         default: break;  // PONG: _lastRx already updated
     }
 }
 
+/// Keys agreed: READY proves who we are (and, when pairing, that the PIN was right).
+- (void)startEncryption {
+    _secure = YES;
+    NSMutableData *p = [NSMutableData dataWithBytes:gPublicKey length:32];
+    [p appendData:[[[UIDevice currentDevice] name] dataUsingEncoding:NSUTF8StringEncoding] ?: [NSData data]];
+    [self sendFrame:kReady payload:p];
+}
+
+/// Encrypted records from the Mac.
+- (void)handleSealed:(uint8_t)type payload:(NSData *)p {
+    if (type == kWelcome && !_authed && p.length >= 4) {
+        const uint8_t *b = p.bytes;
+        _sessionID = ((uint32_t)b[0] << 24) | ((uint32_t)b[1] << 16) | ((uint32_t)b[2] << 8) | b[3];
+        [self welcome:[p subdataWithRange:NSMakeRange(4, p.length - 4)]];
+    }
+    // PONG: nothing to do
+}
+
+- (void)welcome:(NSData *)nameData {
+    _authed = YES;
+    NSString *name = [[NSString alloc] initWithData:nameData encoding:NSUTF8StringEncoding];
+    if (!name.length) name = _qName.length ? _qName : _qHost;
+    if (!_usb && _haveMacKey) {
+        NSString *host = _qHost, *bonjour = _qName, *key = Hex(_macKey, 32);
+        dispatch_async(dispatch_get_main_queue(), ^{
+            NSUserDefaults *d = [NSUserDefaults standardUserDefaults];
+            [d setObject:host forKey:PDPrefLastHost];
+            [d setObject:name forKey:PDPrefLastName];
+            NSMutableDictionary *macs = [[d dictionaryForKey:PDPrefPairedMacs] mutableCopy] ?: [NSMutableDictionary dictionary];
+            macs[key] = name;
+            [d setObject:macs forKey:PDPrefPairedMacs];
+            NSMutableDictionary *targets = [[d dictionaryForKey:PDPrefPairedTargets] mutableCopy] ?: [NSMutableDictionary dictionary];
+            if (host.length) targets[host] = key;
+            if (bonjour.length) targets[bonjour] = key;
+            targets[name] = key;
+            [d setObject:targets forKey:PDPrefPairedTargets];
+        });
+    }
+    _qPin = @"";   // paired now (or on the cable): the PIN isn't needed again
+    [self publishState:PDStateConnected macName:name error:nil];
+}
+
+- (void)deny:(int)reason {
+    _wanted = NO;
+    _generation++;
+    NSString *forget = (reason == kDeniedNotPaired && _haveMacKey) ? Hex(_macKey, 32) : nil;
+    [self closeSockets];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        self.lastDenyReason = reason;
+        if (forget) {   // the Mac forgot this iPad
+            NSUserDefaults *d = [NSUserDefaults standardUserDefaults];
+            NSMutableDictionary *macs = [[d dictionaryForKey:PDPrefPairedMacs] mutableCopy];
+            [macs removeObjectForKey:forget];
+            if (macs) [d setObject:macs forKey:PDPrefPairedMacs];
+            NSMutableDictionary *targets = [[d dictionaryForKey:PDPrefPairedTargets] mutableCopy];
+            [targets removeObjectsForKeys:[targets allKeysForObject:forget]];
+            if (targets) [d setObject:targets forKey:PDPrefPairedTargets];
+        }
+    });
+    NSString *msg = reason == kDeniedLocked ? @"Muitas tentativas. Aguarde 1 minuto."
+                  : reason == kDeniedVersion ? @"Atualize o PadDeck no Mac para a versão 1.3 ou mais recente."
+                  : reason == kDeniedNotPaired ? nil   // the connect screen asks for the PIN
+                  : @"PIN incorreto.";
+    [self publishState:PDStateIdle macName:nil error:msg];
+}
+
+/// Sends a frame, encrypted once the session has keys.
 - (void)sendFrame:(uint8_t)type payload:(NSData *)payload {
     if (_tcp < 0) return;
-    NSUInteger len = MIN(payload.length, 65535);
-    NSMutableData *f = [NSMutableData dataWithCapacity:3 + len];
-    uint8_t head[3] = { type, (uint8_t)(len >> 8), (uint8_t)(len & 0xff) };
-    [f appendBytes:head length:3];
-    if (len) [f appendBytes:payload.bytes length:len];
+    NSMutableData *f;
+    if (_secure) {
+        NSUInteger len = MIN(payload.length, 65535 - PD_TAG_SIZE - 1);   // inner: type + payload
+        NSMutableData *inner = [NSMutableData dataWithBytes:&type length:1];
+        if (len) [inner appendBytes:payload.bytes length:len];
+        NSUInteger total = inner.length + PD_TAG_SIZE;
+        uint8_t head[3] = { kSealed, (uint8_t)(total >> 8), (uint8_t)(total & 0xff) };
+        f = [NSMutableData dataWithLength:3 + total];
+        memcpy(f.mutableBytes, head, 3);
+        pd_seal(&_session, head, 3, inner.bytes, inner.length, (uint8_t *)f.mutableBytes + 3);
+    } else {
+        NSUInteger len = MIN(payload.length, 65535);
+        f = [NSMutableData dataWithCapacity:3 + len];
+        uint8_t head[3] = { type, (uint8_t)(len >> 8), (uint8_t)(len & 0xff) };
+        [f appendBytes:head length:3];
+        if (len) [f appendBytes:payload.bytes length:len];
+    }
     const uint8_t *p = f.bytes;
     size_t left = f.length;
     while (left > 0) {
@@ -413,7 +585,7 @@ enum {
 /// Sends a command only when authenticated.
 - (void)command:(uint8_t)type payload:(NSData *)payload {
     dispatch_async(_q, ^{
-        if (self->_token == 0) return;
+        if (!self->_authed) return;
         [self sendFrame:type payload:payload];
     });
 }
@@ -423,13 +595,13 @@ enum {
     uint16_t x = (uint16_t)(int16_t)MAX(-32768, MIN(32767, a));
     uint16_t y = (uint16_t)(int16_t)MAX(-32768, MIN(32767, b));
     dispatch_async(_q, ^{
-        if (self->_token == 0) return;
+        if (!self->_authed) return;
         uint8_t pl[4] = { (uint8_t)(x >> 8), (uint8_t)(x & 0xff), (uint8_t)(y >> 8), (uint8_t)(y & 0xff) };
-        if (self->_udp >= 0) {
-            uint32_t t = self->_token;
-            uint8_t dg[9] = { (uint8_t)(t >> 24), (uint8_t)(t >> 16), (uint8_t)(t >> 8), (uint8_t)t,
-                              type, pl[0], pl[1], pl[2], pl[3] };
-            if (send(self->_udp, dg, sizeof dg, 0) == (ssize_t)sizeof dg) return;
+        if (self->_udp >= 0 && self->_secure) {
+            uint8_t inner[5] = { type, pl[0], pl[1], pl[2], pl[3] };
+            uint8_t dg[PD_UDP_HEAD + sizeof inner + PD_TAG_SIZE];
+            size_t n = pd_udp_seal(&self->_session, self->_sessionID, inner, sizeof inner, dg);
+            if (send(self->_udp, dg, n, 0) == (ssize_t)n) return;
         }
         [self sendFrame:type payload:[NSData dataWithBytes:pl length:4]];
     });

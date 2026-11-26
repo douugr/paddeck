@@ -12,11 +12,17 @@ APP=build/PadDeck.app
 rm -rf "$APP" build/obj
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" build/obj
 
+CRYPTO=../crypto   # shared with the iPad app (and copied into the App Store app)
 for arch in arm64 x86_64; do
+  for c in monocypher pdcrypto; do
+    xcrun clang -O2 -Wall -target $arch-apple-macos12.0 -c "$CRYPTO/$c.c" -o build/obj/$c-$arch.o
+  done
   xcrun swiftc -O \
     -target $arch-apple-macos12.0 \
+    -import-objc-header "$CRYPTO/pdcrypto.h" \
     -framework Cocoa -framework Network -framework ServiceManagement \
-    main.swift -o build/obj/PadDeck-$arch
+    main.swift "$CRYPTO/PDSecure.swift" build/obj/monocypher-$arch.o build/obj/pdcrypto-$arch.o \
+    -o build/obj/PadDeck-$arch
 done
 lipo -create build/obj/PadDeck-arm64 build/obj/PadDeck-x86_64 -output "$APP/Contents/MacOS/PadDeck"
 

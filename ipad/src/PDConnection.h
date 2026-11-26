@@ -16,13 +16,17 @@ extern NSString *const PDConnectionChangedNotification;
 @property (nonatomic, readonly) PDState state;
 @property (nonatomic, readonly, copy) NSString *host;
 @property (nonatomic, readonly, copy) NSString *macName;
-/// 0 none, 1 wrong PIN, 2 too many attempts, 3 version mismatch. Reset on the next connect.
+/// 0 none, 1 wrong PIN, 2 too many attempts, 3 version mismatch, 4 the PIN is needed to pair
+/// (first connection, or the Mac forgot this iPad). Reset on the next connect.
 @property (nonatomic, readonly) int lastDenyReason;
 @property (nonatomic, readonly, copy) NSString *lastError;
 /// YES while connected (or connecting) through the USB cable.
 @property (nonatomic, readonly) BOOL viaUSB;
 
+/// pin is only used to pair (empty for a Mac that's already paired).
 - (void)connectToHost:(NSString *)host name:(NSString *)name pin:(NSString *)pin;
+/// YES if this Bonjour name or IP belongs to a paired Mac.
++ (BOOL)isPairedTarget:(NSString *)nameOrHost;
 /// User-initiated disconnect: stops automatic reconnection.
 - (void)disconnect;
 /// Reconnects after the app comes back to the foreground, if a connection is wanted.

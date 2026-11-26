@@ -24,7 +24,8 @@ Website: [douugr.github.io/paddeck](https://douugr.github.io/paddeck/)
 - **Layout**: keyboard below or above the trackpad (Settings), or hidden for a full-screen trackpad.
 - **Shortcuts**: 3 pages of 15 buttons. Each one sends a shortcut (`cmd+shift+4`), types text,
   opens an app or URL, or presses a media key. Hold a button to edit it.
-- Finds the Mac automatically (Bonjour), pairs with a 4-digit PIN, reconnects by itself.
+- Finds the Mac automatically (Bonjour), pairs once with a 4-digit PIN, reconnects by itself.
+  Everything sent over Wi-Fi is encrypted.
 - **USB cable mode**: plug the iPad into the Mac and it connects by itself through usbmuxd
   (no PIN, lower and steadier latency, charges while you use it). Unplug and it falls back to Wi-Fi.
 
@@ -48,8 +49,10 @@ cd mac-agent
 ```
 
 On first launch macOS asks for **Accessibility** permission (System Settings › Privacy &
-Security › Accessibility). It is needed to move the pointer and type. The PIN is shown in the
-keyboard icon in the menu bar. If the firewall is on, allow incoming connections for PadDeck.
+Security › Accessibility). It is needed to move the pointer and type. The PIN for pairing a new
+device is shown in the keyboard icon in the menu bar; it changes after every pairing. **Forget
+paired devices** in the same menu unpairs them all. If the firewall is on, allow incoming
+connections for PadDeck.
 
 The agent is ad-hoc signed, so after rebuilding it you may need to remove and re-add it in the
 Accessibility list.
@@ -73,9 +76,12 @@ Or install **PadDeck** from the repo `https://douugr.github.io/repo/` in Cydia o
 
 ## Protocol
 
-Plain TCP + UDP on the local network, documented in [docs/PROTOCOL.md](docs/PROTOCOL.md).
-Traffic is not encrypted; the PIN only keeps other devices from taking control, so use it on a
-network you trust.
+TCP + UDP on the local network, documented in [docs/PROTOCOL.md](docs/PROTOCOL.md). Since
+version 2 (Mac agent 1.3, iOS 8 app 1.8) everything sent over Wi-Fi is encrypted
+(XChaCha20-Poly1305). The PIN pairs a device once through a PAKE (CPace), so it never travels on
+the network; later connections authenticate both sides with the keys exchanged when pairing.
+The USB cable stays unencrypted. The shared C code is in `crypto/`
+([Monocypher](https://monocypher.org), BSD-2/CC0); `crypto/tests/run.sh` runs its tests.
 
 ## License
 

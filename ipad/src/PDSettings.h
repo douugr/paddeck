@@ -16,6 +16,8 @@
 #define PDPrefKeyClick       @"keyClick"        // bool: click sound on keys
 #define PDPrefLastHost       @"lastHost"        // string (IP)
 #define PDPrefLastName       @"lastName"        // string (Mac name)
-#define PDPrefPins           @"pins"            // dict name/host -> PIN
+#define PDPrefPins           @"pins"            // up to 1.7: dict name/host -> PIN (removed on launch)
+#define PDPrefPairedMacs     @"pairedMacs"      // dict Mac key (hex) -> Mac name
+#define PDPrefPairedTargets  @"pairedTargets"   // dict Bonjour name / IP -> Mac key (hex)
 
 void PDRegisterDefaults(void);

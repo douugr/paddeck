@@ -31,7 +31,7 @@ build() {
   mkdir -p "$APP"
   "$CLANG" -arch armv7 -miphoneos-version-min=8.0 -isysroot "$SDK" \
     -fobjc-arc -O2 -Wall -Wno-unguarded-availability-new -Wno-unguarded-availability \
-    src/*.m \
+    -I../crypto src/*.m ../crypto/pdcrypto.c ../crypto/monocypher.c \
     -framework UIKit -framework Foundation -framework CoreGraphics -framework QuartzCore -framework AudioToolbox \
     -o "$APP/PadDeck"
   cp Info.plist "$APP/"
