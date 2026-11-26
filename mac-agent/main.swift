@@ -13,11 +13,14 @@ enum Proto {
     static let udpPort: UInt16 = 47817
     static let usbPort: UInt16 = 47818   // the iPad app listens here; reached through usbmuxd
     static let bonjourType = "_paddeck._tcp"
-    static let version: UInt8 = 1
+    static let version: UInt8 = PDWire.version   // 2: encrypted over Wi-Fi (1: PIN in the clear, cable only)
 
     // client -> agent
     static let hello: UInt8 = 0x01
     static let ping: UInt8 = 0x02
+    static let pair: UInt8 = 0x03      // nonce[16] || Y[32]   (first connection, with the PIN)
+    static let resume: UInt8 = 0x04    // device key[32] || ephemeral[32]   (paired devices)
+    static let ready: UInt8 = 0x05     // encrypted: device key[32] || device name
     static let button: UInt8 = 0x10
     static let move: UInt8 = 0x11
     static let scroll: UInt8 = 0x12
@@ -30,6 +33,15 @@ enum Proto {
     static let welcome: UInt8 = 0x81
     static let denied: UInt8 = 0x82
     static let pong: UInt8 = 0x83
+    static let serverHello: UInt8 = 0x84   // version, Mac key[32]
+    static let pairReply: UInt8 = 0x85     // Y[32]
+    static let resumeReply: UInt8 = 0x86   // ephemeral[32]
+
+    // DENIED reasons
+    static let deniedPIN: UInt8 = 1
+    static let deniedLocked: UInt8 = 2
+    static let deniedVersion: UInt8 = 3
+    static let deniedNotPaired: UInt8 = 4
 }
 
 // MARK: - Byte helpers
@@ -352,15 +364,34 @@ final class Smoother {
 // MARK: - Sessions
 
 final class Session {
+    enum Phase {
+        case start                               // waiting for HELLO
+        case greeted                             // SERVER_HELLO sent, waiting for PAIR or RESUME
+        case ready(pairing: Bool, device: Data?) // keys agreed, waiting for the encrypted READY
+        case authed
+    }
+
     let conn: NWConnection
     let host: String
-    var token: UInt32 = 0
+    var phase = Phase.start
+    var secure: SecureChannel?       // nil on the cable (plaintext) and before the handshake
     var name = "iPad"
-    var authed = false
+    var device: Data?                // paired device key (Wi-Fi)
     var buffer = Data()
     var lastSeen = Date()
     var usb = false                  // came through the cable: no PIN needed
     var onClose: (() -> Void)?
+
+    private(set) var closed = false
+
+    var authed: Bool { if case .authed = phase { return true } else { return false } }
+
+    /// Stops reading this connection (the rest of the buffer is discarded) and closes it.
+    func close() {
+        closed = true
+        buffer.removeAll()
+        conn.cancel()
+    }
 
     init(conn: NWConnection) {
         self.conn = conn
@@ -370,6 +401,50 @@ final class Session {
     func send(_ data: Data) {
         conn.send(content: data, completion: .contentProcessed { _ in })
     }
+
+    /// Sends a frame, encrypted once the session has keys.
+    func send(_ type: UInt8, _ payload: Data = Data()) {
+        if let sc = secure { send(sc.sealFrame(type, payload)) } else { send(frame(type, payload)) }
+    }
+}
+
+// MARK: - Identity and paired devices
+
+/// The Mac's long-term key (in Application Support, readable only by this user) and the
+/// devices paired with it (public keys, in the preferences).
+final class Keyring {
+    let identity: PDIdentity
+
+    init() {
+        let fm = FileManager.default
+        let dir = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("PadDeck", isDirectory: true)
+        let file = dir.appendingPathComponent("identity.key")
+        if let d = try? Data(contentsOf: file), let id = PDIdentity(secretKey: [UInt8](d)) {
+            identity = id
+        } else {
+            let id = PDIdentity.generate()
+            try? fm.createDirectory(at: dir, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+            fm.createFile(atPath: file.path, contents: Data(id.secretKey), attributes: [.posixPermissions: 0o600])
+            identity = id
+        }
+    }
+
+    /// Device key (hex) -> device name.
+    var paired: [String: String] {
+        get { UserDefaults.standard.dictionary(forKey: "paired") as? [String: String] ?? [:] }
+        set { UserDefaults.standard.set(newValue, forKey: "paired") }
+    }
+
+    func isPaired(_ key: Data) -> Bool { paired[pdHex([UInt8](key))] != nil }
+
+    func pair(_ key: Data, name: String) {
+        var p = paired
+        p[pdHex([UInt8](key))] = name
+        paired = p
+    }
+
+    func forgetAll() { paired = [:] }
 }
 
 protocol ServerDelegate: AnyObject {
@@ -386,6 +461,8 @@ final class Server {
     private var udp: NWListener?
     private var sessions: [ObjectIdentifier: Session] = [:]
     private var failures: [String: (count: Int, until: Date)] = [:]
+    private var pinFailures = 0          // wrong PINs from any host since the PIN was created
+    let keyring = Keyring()
     private var reaper: DispatchSourceTimer?
     private var usbmux: USBMux?
 
@@ -402,8 +479,9 @@ final class Server {
         set { UserDefaults.standard.set(newValue, forKey: "pin") }
     }
 
-    /// Names of the connected iPads (read on main thread through a snapshot).
+    /// Names of the connected iPads and the paired count (read on main thread through a snapshot).
     private(set) var connectedNames: [String] = []
+    private(set) var pairedCount = 0
 
     static func randomPIN() -> String { String(format: "%04d", Int.random(in: 0...9999)) }
 
@@ -451,17 +529,39 @@ final class Server {
         notify()
     }
 
-    /// Drops every session (used when the PIN changes).
-    func disconnectAll() {
+    /// Up to 1.2 the PIN travelled in the clear: replace it once when 1.3 first runs.
+    func newPINIfNeeded() {
+        guard !UserDefaults.standard.bool(forKey: "pinV2") else { return }
+        pin = Server.randomPIN()
+        UserDefaults.standard.set(true, forKey: "pinV2")
+    }
+
+    /// New PIN for the next pairing (paired devices keep working).
+    func newPIN() {
         queue.async {
-            for s in self.sessions.values { s.conn.cancel() }
+            self.pin = Server.randomPIN()
+            self.pinFailures = 0
+            self.notify()
+        }
+    }
+
+    /// Unpairs every device, disconnects them and changes the PIN.
+    func forgetAllDevices() {
+        queue.async {
+            self.keyring.forgetAll()
+            self.pin = Server.randomPIN()
+            self.pinFailures = 0
+            for s in self.sessions.values where !s.usb { s.conn.cancel() }
+            self.notify()
         }
     }
 
     private func notify() {
         let names = sessions.values.filter { $0.authed }.map { $0.usb ? "\($0.name) " + tr("(cable)", "(cabo)") : $0.name }
+        let count = keyring.paired.count
         DispatchQueue.main.async {
             self.connectedNames = names
+            self.pairedCount = count
             self.delegate?.serverChanged()
         }
     }
@@ -512,7 +612,7 @@ final class Server {
     }
 
     private func parse(_ s: Session) {
-        while s.buffer.count >= 3 {
+        while !s.closed && s.buffer.count >= 3 {
             let len = Int(s.buffer.u16(1))
             guard s.buffer.count >= 3 + len else { return }
             let type = s.buffer.u8(0)
@@ -538,45 +638,163 @@ final class Server {
     }
 
     private func handle(_ s: Session, type: UInt8, payload p: Data) {
-        switch type {
-        case Proto.hello: hello(s, p)
-        case Proto.ping: s.send(frame(Proto.pong))
+        if s.usb {
+            // The cable is the proof of trust: plaintext, no PIN (protocol v1 and v2).
+            switch type {
+            case Proto.hello: usbHello(s, p)
+            case Proto.ping: s.send(frame(Proto.pong))
+            default: if s.authed { command(type, p, smooth: false) }
+            }
+            return
+        }
+        switch (type, s.phase) {
+        case (Proto.ping, _) where !s.authed:
+            // Pings during the handshake: answered in the clear until there are keys.
+            if s.secure == nil { s.send(frame(Proto.pong)) }
+        case (Proto.hello, .start):
+            hello(s, p)
+        case (Proto.pair, .greeted):
+            pair(s, p)
+        case (Proto.resume, .greeted):
+            resume(s, p)
+        case (PDWire.sealed, _):
+            guard let sc = s.secure, let record = sc.openFrame(p) else {
+                if case .ready(true, _) = s.phase { wrongPIN(s) } else { s.close() }
+                return
+            }
+            sealed(s, record.type, record.payload)
         default:
-            guard s.authed else { return }
-            command(type, p, smooth: !s.usb)
+            // Anything else (plaintext commands, out-of-order handshake) ends the connection.
+            s.close()
         }
     }
 
-    private func hello(_ s: Session, _ p: Data) {
-        if !s.usb, let f = failures[s.host], f.count >= 5, f.until > Date() {
-            s.send(frame(Proto.denied, Data([2])))
-            return
-        }
-        guard p.count >= 2, p.u8(0) == Proto.version else {
-            s.send(frame(Proto.denied, Data([3])))
+    private func locked(_ host: String) -> Bool {
+        if let f = failures[host], f.count >= 5, f.until > Date() { return true }
+        return false
+    }
+
+    /// Cable: HELLO carries the version, an ignored PIN and the device name.
+    private func usbHello(_ s: Session, _ p: Data) {
+        guard p.count >= 2, p.u8(0) == 1 || p.u8(0) == Proto.version else {
+            s.send(frame(Proto.denied, Data([Proto.deniedVersion])))
             return
         }
         let pinLen = Int(p.u8(1))
         guard p.count >= 2 + pinLen else { return }
-        let given = String(data: p.sub(2, pinLen), encoding: .utf8) ?? ""
-        guard s.usb || given == pin else {
-            var f = failures[s.host] ?? (count: 0, until: Date())
-            f.count += 1
-            f.until = Date().addingTimeInterval(60)
-            failures[s.host] = f
-            s.send(frame(Proto.denied, Data([f.count >= 5 ? 2 : 1])))
-            return
-        }
-        failures[s.host] = nil
-        s.authed = true
-        s.token = UInt32.random(in: 1...UInt32.max)
         if let n = String(data: p.sub(2 + pinLen), encoding: .utf8), !n.isEmpty { s.name = n }
-        var w = Data()
-        withUnsafeBytes(of: s.token.bigEndian) { w.append(contentsOf: $0) }
-        w.append((Host.current().localizedName ?? "Mac").data(using: .utf8)!)
+        s.phase = .authed
+        var w = Data(count: 4)   // the v1 UDP token: unused on the cable
+        w.append(macName().data(using: .utf8)!)
         s.send(frame(Proto.welcome, w))
         notify()
     }
+
+    /// Wi-Fi: HELLO (version 2) -> SERVER_HELLO with the Mac's key.
+    private func hello(_ s: Session, _ p: Data) {
+        guard p.count >= 1, p.u8(0) == Proto.version else {
+            // v1 apps send the PIN in the clear: refuse them (they can still use the cable).
+            s.send(frame(Proto.denied, Data([Proto.deniedVersion])))
+            return
+        }
+        if locked(s.host) {
+            s.send(frame(Proto.denied, Data([Proto.deniedLocked])))
+            return
+        }
+        s.phase = .greeted
+        var w = Data([Proto.version])
+        w.append(contentsOf: keyring.identity.publicKey)
+        s.send(frame(Proto.serverHello, w))
+    }
+
+    private func pair(_ s: Session, _ p: Data) {
+        if locked(s.host) {
+            s.send(frame(Proto.denied, Data([Proto.deniedLocked])))
+            return
+        }
+        guard let hs = PDServerHandshake.pair(p, me: keyring.identity, pin: pin) else {
+            s.close()
+            return
+        }
+        let (sc, reply) = hs
+        s.secure = sc
+        s.phase = .ready(pairing: true, device: nil)
+        s.send(frame(Proto.pairReply, reply))
+    }
+
+    private func resume(_ s: Session, _ p: Data) {
+        guard p.count == 64 else { s.close(); return }
+        let device = p.sub(0, 32)
+        guard keyring.isPaired(device) else {
+            s.send(frame(Proto.denied, Data([Proto.deniedNotPaired])))
+            return
+        }
+        guard let hs = PDServerHandshake.resume(device: [UInt8](device), ephemeral: p.sub(32, 32),
+                                                me: keyring.identity) else {
+            s.close()
+            return
+        }
+        let (sc, reply) = hs
+        s.secure = sc
+        s.phase = .ready(pairing: false, device: device)
+        s.send(frame(Proto.resumeReply, reply))
+    }
+
+    /// The first record didn't open after PAIR: the PIN typed on the device is wrong.
+    private func wrongPIN(_ s: Session) {
+        var f = failures[s.host] ?? (count: 0, until: Date())
+        f.count += 1
+        f.until = Date().addingTimeInterval(60)
+        failures[s.host] = f
+        pinFailures += 1
+        s.secure = nil
+        s.phase = .start
+        s.send(frame(Proto.denied, Data([f.count >= 5 ? Proto.deniedLocked : Proto.deniedPIN])))
+        if pinFailures >= 10 {
+            // Many guesses from several hosts: the next pairing needs a new PIN from the menu.
+            pin = Server.randomPIN()
+            pinFailures = 0
+            notify()
+        }
+    }
+
+    private func sealed(_ s: Session, _ type: UInt8, _ p: Data) {
+        switch s.phase {
+        case .ready(let pairing, let device):
+            guard type == Proto.ready, p.count >= 32 else { s.close(); return }
+            let key = p.sub(0, 32)
+            let sent = String(data: p.sub(32), encoding: .utf8) ?? ""
+            if pairing {
+                failures[s.host] = nil
+                pinFailures = 0
+                keyring.pair(key, name: sent.isEmpty ? "iPad" : sent)
+                pin = Server.randomPIN()   // each PIN pairs one device
+            } else if key != device {
+                s.close()
+                return
+            } else if !sent.isEmpty, keyring.paired[pdHex([UInt8](key))] != sent {
+                keyring.pair(key, name: sent)   // renamed device
+            }
+            s.device = key
+            s.name = sent.isEmpty ? (keyring.paired[pdHex([UInt8](key))] ?? "iPad") : sent
+            s.phase = .authed
+            s.secure?.sessionID = UInt32.random(in: 1...UInt32.max)
+            var w = Data()
+            withUnsafeBytes(of: s.secure!.sessionID.bigEndian) { w.append(contentsOf: $0) }
+            w.append(macName().data(using: .utf8)!)
+            s.send(Proto.welcome, w)
+            notify()
+        case .authed:
+            switch type {
+            case Proto.ping: s.send(Proto.pong)
+            default: command(type, p, smooth: true)
+            }
+        default:
+            s.close()
+        }
+    }
+
+    private func macName() -> String { Host.current().localizedName ?? "Mac" }
 
     /// Everything after authentication; shared by TCP and UDP.
     private func command(_ type: UInt8, _ p: Data, smooth: Bool) {
@@ -613,14 +831,15 @@ final class Server {
     private func receiveUDP(_ c: NWConnection) {
         c.receiveMessage { [weak self] data, _, _, err in
             guard let self = self else { return }
-            if let d = data, d.count >= 5 {
-                let token = d.u32(0)
+            if let d = data {
+                let id = SecureChannel.datagramSessionID(d)
                 let host = hostKey(c.endpoint)
-                if let s = self.sessions.values.first(where: { $0.authed && $0.token == token && $0.host == host }) {
+                if id != 0,
+                   let s = self.sessions.values.first(where: { $0.authed && $0.secure?.sessionID == id && $0.host == host }),
+                   let dg = s.secure?.openDatagram(d) {
                     s.lastSeen = Date()
-                    let type = d.u8(4)
-                    if type == Proto.move || type == Proto.scroll {
-                        self.command(type, d.sub(5), smooth: true)
+                    if dg.type == Proto.move || dg.type == Proto.scroll {
+                        self.command(dg.type, dg.payload, smooth: true)
                     }
                 }
             }
@@ -780,6 +999,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ServerDelegate, NSMenu
         server.delegate = self
         server.start()
         _ = server.pin
+        server.newPINIfNeeded()
 
         // Ask once for Accessibility (needed to post events).
         let opts = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
@@ -803,12 +1023,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ServerDelegate, NSMenu
         menu.addItem(disabled(status))
         item.button?.appearsDisabled = names.isEmpty
 
+        menu.addItem(disabled(tr("To pair a new device:", "Para parear um novo aparelho:")))
         let pinItem = disabled("PIN: \(server.pin)")
         pinItem.attributedTitle = NSAttributedString(
             string: "PIN: \(server.pin)",
             attributes: [.font: NSFont.monospacedDigitSystemFont(ofSize: 14, weight: .semibold)])
         menu.addItem(pinItem)
         menu.addItem(action(tr("New PIN", "Gerar novo PIN"), #selector(newPIN)))
+        let count = server.pairedCount
+        if count > 0 {
+            let title = count == 1 ? tr("Forget the paired device…", "Esquecer o aparelho pareado…")
+                                   : tr("Forget \(count) paired devices…", "Esquecer \(count) aparelhos pareados…")
+            menu.addItem(action(title, #selector(forgetDevices)))
+        }
         let smooth = action(tr("Smooth movement over Wi-Fi", "Suavizar movimento no Wi-Fi"), #selector(toggleSmooth))
         smooth.state = Smoother.enabled ? .on : .off
         menu.addItem(smooth)
@@ -847,9 +1074,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ServerDelegate, NSMenu
     }
 
     @objc func newPIN() {
-        server.pin = Server.randomPIN()
-        server.disconnectAll()
-        rebuild()
+        server.newPIN()
+    }
+
+    @objc func forgetDevices() {
+        let alert = NSAlert()
+        alert.messageText = tr("Forget paired devices?", "Esquecer os aparelhos pareados?")
+        alert.informativeText = tr("They'll be disconnected and will need the new PIN to connect again over Wi-Fi.",
+                                   "Eles serão desconectados e vão precisar do novo PIN para conectar de novo pelo Wi-Fi.")
+        alert.addButton(withTitle: tr("Forget", "Esquecer"))
+        alert.addButton(withTitle: tr("Cancel", "Cancelar"))
+        NSApp.activate(ignoringOtherApps: true)
+        if alert.runModal() == .alertFirstButtonReturn { server.forgetAllDevices() }
     }
 
     @objc func openAccessibility() {

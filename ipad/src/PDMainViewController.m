@@ -232,7 +232,7 @@
         default:
             self.dot.backgroundColor = PDColorOff();
             self.statusLabel.text = @"Desconectado";
-            // PIN changed on the Mac or similar: go back to the connect screen.
+            // The Mac forgot this iPad or similar: go back to the connect screen.
             if (self.presentingViewController && !self.presentedViewController && self.view.window) {
                 [self leave];
             }

@@ -131,17 +131,16 @@
         self.triedAuto = YES;
         NSUserDefaults *d = [NSUserDefaults standardUserDefaults];
         NSString *host = [d stringForKey:PDPrefLastHost];
-        NSString *pin = [d dictionaryForKey:PDPrefPins][host];
-        if (host.length && pin.length) {
-            [[PDConnection shared] connectToHost:host name:[d stringForKey:PDPrefLastName] pin:pin];
+        if ([PDConnection isPairedTarget:host]) {
+            [[PDConnection shared] connectToHost:host name:[d stringForKey:PDPrefLastName] pin:@""];
         }
     }
     PDConnection *c = [PDConnection shared];
-    if (c.state == PDStateIdle && c.lastDenyReason == 1) {
-        // Came back from the main screen because the PIN changed on the Mac.
+    if (c.state == PDStateIdle && c.lastDenyReason == 4) {
+        // Came back from the main screen because the Mac forgot this iPad.
         self.pendingHost = c.host;
         self.pendingName = c.macName;
-        [self askPIN:@"O PIN mudou no Mac. Digite o novo PIN."];
+        [self askPIN:@"Este Mac não reconhece mais este iPad. Digite o PIN mostrado no menu do PadDeck no Mac."];
     }
     [self updateStatus];
 }
@@ -202,10 +201,8 @@
 - (void)connectHost:(NSString *)host name:(NSString *)name {
     self.pendingHost = host;
     self.pendingName = name;
-    NSDictionary *pins = [[NSUserDefaults standardUserDefaults] dictionaryForKey:PDPrefPins];
-    NSString *pin = pins[name] ?: pins[host];
-    if (pin.length) {
-        [[PDConnection shared] connectToHost:host name:name pin:pin];
+    if ([PDConnection isPairedTarget:name] || [PDConnection isPairedTarget:host]) {
+        [[PDConnection shared] connectToHost:host name:name pin:@""];
     } else {
         [self askPIN:nil];
     }
@@ -255,14 +252,15 @@
     if (c.state == PDStateConnected && !self.presentedViewController) {
         PDMainViewController *main = [[PDMainViewController alloc] init];
         [self presentViewController:main animated:YES completion:nil];
-    } else if (c.state == PDStateIdle && c.lastDenyReason == 1 && self.isViewLoaded && self.view.window
-               && !self.presentedViewController) {
+    } else if (c.state == PDStateIdle && (c.lastDenyReason == 1 || c.lastDenyReason == 4)
+               && self.isViewLoaded && self.view.window && !self.presentedViewController) {
         if (!self.pendingHost) {
             self.pendingHost = c.host;
             self.pendingName = c.macName;
         }
-        [self askPIN:@"PIN incorreto. Confira no menu do PadDeck no Mac."];
-    } else if (c.state == PDStateIdle && c.lastDenyReason > 1 && !self.presentedViewController) {
+        [self askPIN:c.lastDenyReason == 1 ? @"PIN incorreto. Confira no menu do PadDeck no Mac." : nil];
+    } else if (c.state == PDStateIdle && (c.lastDenyReason == 2 || c.lastDenyReason == 3)
+               && !self.presentedViewController) {
         [self alert:c.lastError title:@"Não conectado"];
     }
 }
@@ -311,8 +309,7 @@
     cell.selectedBackgroundView.backgroundColor = PDColorSurfaceActive();
     NSNetService *s = self.services[(NSUInteger)ip.row];
     cell.textLabel.text = s.name;
-    NSDictionary *pins = [[NSUserDefaults standardUserDefaults] dictionaryForKey:PDPrefPins];
-    cell.detailTextLabel.text = pins[s.name] ? @"PIN salvo" : @"Toque para conectar";
+    cell.detailTextLabel.text = [PDConnection isPairedTarget:s.name] ? @"Pareado" : @"Toque para conectar";
     return cell;
 }
 
