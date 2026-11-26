@@ -42,6 +42,6 @@ else
     || fail "o commit $(git rev-parse --short HEAD) não está no GitHub: faça git push antes"
   EXTRA=()
   [[ "${PRERELEASE:-0}" == 1 ]] && EXTRA+=(--prerelease)
-  gh release create "v$VERSION" mac-agent/build/PadDeck-mac.zip --target "$(git rev-parse HEAD)" "${EXTRA[@]}" \
+  gh release create "v$VERSION" mac-agent/build/PadDeck-mac.zip --target "$(git rev-parse HEAD)" ${EXTRA[@]+"${EXTRA[@]}"} \
     -t "PadDeck $VERSION for Mac" -n "$NOTES" && ok "release v$VERSION publicado${PRERELEASE:+ (pre-release)}"
 fi
