@@ -95,7 +95,7 @@ final class Injector {
 
     func move(dx: Double, dy: Double) {
         let from = location
-        let to = clamp(CGPoint(x: from.x + dx, y: from.y + dy), near: from)
+        let to = clamp(CGPoint(x: from.x + dx, y: from.y + dy))
         let type: CGEventType
         let btn: CGMouseButton
         if leftDown { type = .leftMouseDragged; btn = .left }
@@ -159,16 +159,47 @@ final class Injector {
         if middleDown { buttonEvent(2, down: false) }
     }
 
-    private func clamp(_ p: CGPoint, near from: CGPoint) -> CGPoint {
+    /// Keeps the pointer on a screen: if p falls outside every display (e.g. crossing diagonally
+    /// into a shorter one), it goes to the nearest point of the nearest display.
+    private func clamp(_ p: CGPoint) -> CGPoint {
+        let rects = displays()
+        if rects.contains(where: { $0.contains(p) }) { return p }
+        var best = p, bestDistance = CGFloat.infinity
+        for r in rects.isEmpty ? [CGRect(x: 0, y: 0, width: 1440, height: 900)] : rects {
+            let q = CGPoint(x: min(max(p.x, r.minX), r.maxX - 1), y: min(max(p.y, r.minY), r.maxY - 1))
+            let d = (q.x - p.x) * (q.x - p.x) + (q.y - p.y) * (q.y - p.y)
+            if d < bestDistance { best = q; bestDistance = d }
+        }
+        return best
+    }
+
+    // Display bounds, read again only when the screen setup changes (not on every move).
+    private let displayLock = NSLock()
+    private var cachedDisplays: [CGRect]?
+    private var screenObserver: NSObjectProtocol?
+
+    private func displays() -> [CGRect] {
+        displayLock.lock()
+        defer { displayLock.unlock() }
+        if let d = cachedDisplays { return d }
         var count: UInt32 = 0
         CGGetActiveDisplayList(0, nil, &count)
         var ids = [CGDirectDisplayID](repeating: 0, count: Int(max(count, 1)))
         CGGetActiveDisplayList(count, &ids, &count)
-        let rects = ids.prefix(Int(count)).map { CGDisplayBounds($0) }
-        if rects.contains(where: { $0.contains(p) }) { return p }
-        // outside every screen: keep it inside the screen it came from
-        let r = rects.first(where: { $0.contains(from) }) ?? rects.first ?? CGRect(x: 0, y: 0, width: 1440, height: 900)
-        return CGPoint(x: min(max(p.x, r.minX), r.maxX - 1), y: min(max(p.y, r.minY), r.maxY - 1))
+        let d = ids.prefix(Int(count)).map { CGDisplayBounds($0) }
+        cachedDisplays = d
+        return d
+    }
+
+    init() {
+        screenObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: nil
+        ) { [weak self] _ in
+            guard let self = self else { return }
+            self.displayLock.lock()
+            self.cachedDisplays = nil
+            self.displayLock.unlock()
+        }
     }
 
     // MARK: keyboard
@@ -743,6 +774,7 @@ final class Server {
     /// The first record didn't open after PAIR: the PIN typed on the device is wrong.
     private func wrongPIN(_ s: Session) {
         var f = failures[s.host] ?? (count: 0, until: Date())
+        if f.until <= Date() { f.count = 0 }   // the lockout (or the last mistake) is over: start again
         f.count += 1
         f.until = Date().addingTimeInterval(60)
         failures[s.host] = f
